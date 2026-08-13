@@ -1,0 +1,21 @@
+[project]
+name = "neat-walking-robot"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "matplotlib>=3.11.1",
+    "neat-python>=2.0.0",
+    "numpy>=2.4.6",
+    "pandas>=3.0.5",
+    "pybullet-arm64==3.2.8",
+    "scipy>=1.17.1",
+]
+
+[dependency-groups]
+dev = [
+    "jupyter>=1.1.1",
+    "pytest>=9.1.1",
+    "ruff>=0.16.2",
+]
