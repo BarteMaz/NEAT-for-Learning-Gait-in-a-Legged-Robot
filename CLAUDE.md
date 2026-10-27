@@ -42,7 +42,7 @@ Imports are relative to `src/` (e.g. `from exceptions.exceptions import URDFLoad
 
 1. PyBullet basics and three environments: flat fenced arena, fenced bumpy terrain, fenced arena with a ramp.
 2. URDF and manual robot control.
-3. Quadruped model (own URDF or e.g. Unitree Go1, BSD-3-Clause). Open decision.
+3. Quadruped model - mixed approach (own URDF and e.g. Unitree Go1, BSD-3-Clause)
 4. neat-python basics.
 5. Training process: fitness function, thresholds, checkpoints, progressive harder environments.
 6. Analytics layer (data for the thesis).
