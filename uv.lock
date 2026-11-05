@@ -1410,7 +1410,7 @@ wheels = [
 [[package]]
 name = "neat-walking-robot"
 version = "0.1.0"
-source = { virtual = "." }
+source = { editable = "." }
 dependencies = [
     { name = "matplotlib" },
     { name = "neat-python" },
@@ -1418,7 +1418,6 @@ dependencies = [
     { name = "numpy", version = "2.5.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
     { name = "pandas" },
     { name = "pybullet-arm64" },
-    { name = "pytest" },
     { name = "scipy", version = "1.17.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
     { name = "scipy", version = "1.18.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
 ]
@@ -1437,7 +1436,6 @@ requires-dist = [
     { name = "numpy", specifier = ">=2.4.6" },
     { name = "pandas", specifier = ">=3.0.5" },
     { name = "pybullet-arm64", specifier = "==3.2.8" },
-    { name = "pytest", specifier = ">=9.1.1" },
     { name = "scipy", specifier = ">=1.17.1" },
 ]
 

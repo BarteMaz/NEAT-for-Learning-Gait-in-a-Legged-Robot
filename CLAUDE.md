@@ -34,8 +34,8 @@ Imports are relative to `src/` (e.g. `from exceptions.exceptions import URDFLoad
 
 ## Layout
 
-- `src/main.py`, `src/simulation.py`: early PyBullet scripts (load plane and URDF, run the loop).
-- `src/robots/`: URDF models. `src/exceptions/`: custom exceptions.
+- `src/neat_walking_robot/main.py`: early PyBullet script (load plane and URDF, run the loop).
+- `src/neat_walking_robot/robots`: URDF models. `src/neat_walking_robot/exceptions`: custom exceptions.
 - `guides/`: URDF guide and PyBullet quickstart.
 
 ## Plan (one learning session per stage)
