@@ -11,10 +11,22 @@ class RoughEnvironmentData(BaseEnvironmentData):
     transition_distance: float
     n_waves: int
     wavelength_range: tuple[float, float]
-
     def __post_init__(self):
         super().__post_init__()
+        rows = int(np.round(self.track_length / self.cell_size)) + 1
+        cols = int(np.round(self.track_width / self.cell_size)) + 1
+        l_eff = (rows - 1) * self.cell_size
+        w_eff = (cols - 1) * self.cell_size
+        if abs(l_eff - self.track_length) > 1e-9 or abs(w_eff - self.track_width) > 1e-9:
+            print(f"Uwaga: L/C lub W/C nie jest całkowite, teren ma {l_eff:.3f} x {w_eff:.3f} m")
+            raise ValueError(f"Error: track_length / cell_size or track_width / cell_size is not an integer, track has {l_eff:.3f} x {w_eff:.3f} m")
 
+        lam_min, lam_max = self.wavelength_range
+        if lam_min < 4 * self.cell_size:
+            raise ValueError(f"The shortest wave {lam_min} m is less then 4 cells ({4 * self.cell_size} m)")
+
+        if -self.amplitude < self.lowest_ground_point:
+            raise ValueError(f"Negative amplitude ({-self.amplitude} m) must be within the lowest ground point ({self.lowest_ground_point} m)")
 
 
 def smoothstep(t):
@@ -39,8 +51,6 @@ class RoughEnvironment(BaseEnvironment[RoughEnvironmentData]):
 
         l_eff = (rows - 1) * self.params.cell_size
         w_eff = (cols - 1) * self.params.cell_size
-        if abs(l_eff - self.params.track_length) > 1e-9 or abs(w_eff - self.params.track_width) > 1e-9:
-            print(f"Uwaga: L/C lub W/C nie jest całkowite, teren ma {l_eff:.3f} x {w_eff:.3f} m")
 
         x = np.linspace(-l_eff / 2, l_eff / 2, rows)
         y = np.linspace(-w_eff / 2, w_eff / 2, cols)
@@ -49,9 +59,6 @@ class RoughEnvironment(BaseEnvironment[RoughEnvironmentData]):
 
     def generate_terrain(self, X, Y):
         lam_min, lam_max = self.params.wavelength_range
-
-        if lam_min < 4 * self.params.cell_size:
-            raise ValueError(f"Najkrótsza fala {lam_min} m to mniej niż 4 komórki ({4 * self.params.cell_size} m)")
 
         h = np.zeros_like(X)
         for _ in range(self.params.n_waves):
@@ -102,6 +109,6 @@ class RoughEnvironment(BaseEnvironment[RoughEnvironmentData]):
         return ground
 
     def get_ground_level(self, x: float, y: float) -> float:
-        hit = p.rayTest([x, y, 5], [x, y, -5], physicsClientId=self.client)[0]
+        hit = p.rayTest([x, y, -5], [x, y, 5], physicsClientId=self.client)[0]
         return hit[3][2] if hit[0] == self.ground else -1.0
 
