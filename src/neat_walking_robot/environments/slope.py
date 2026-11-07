@@ -43,27 +43,6 @@ class SlopeEnvironment(BaseEnvironment[SlopeEnvironmentData]):
         self.ground = self.build_ground()
 
     def build_ground(self):
-        # start_platform = self.build_static_box(
-        #     dimensions=[self.start_platform_length / 2, self.params.track_width / 2, self.params.ground_thickness / 2],
-        #     position=[self.start_platform_x, 0, -self.params.ground_thickness / 2],
-        #     color=[0.6, 0.7, 0.6, 1]
-        # )
-        # p.changeDynamics(start_platform, -1, lateralFriction=self.params.friction, physicsClientId=self.client)
-        # end_platform = self.build_static_box(
-        #     dimensions=[self.end_platform_length / 2, self.params.track_width / 2, self.params.ground_thickness / 2],
-        #     position=[self.end_platform_x, 0, self.end_platform_z],
-        #     color=[0.6, 0.7, 0.6, 1]
-        # )
-        # p.changeDynamics(end_platform, -1, lateralFriction=self.params.friction, physicsClientId=self.client)
-        # slope = self.build_static_box(
-        #     dimensions=[self.slope_length / 2, self.params.track_width / 2, self.params.ground_thickness / 2],
-        #     position=[0, 0, 0],
-        #     color=[0.6, 0.7, 0.6, 1]
-        # )
-        # p.changeDynamics(slope, -1, lateralFriction=self.params.friction, physicsClientId=self.client)
-        # p.resetBasePositionAndOrientation(slope, [self.slope_x, 0, self.slope_z],
-        #                                   p.getQuaternionFromEuler([0, -self.alpha, 0]), physicsClientId=self.client)
-
         ground_collision = p.createCollisionShapeArray(
             shapeTypes=[p.GEOM_BOX, p.GEOM_BOX, p.GEOM_BOX],
             halfExtents=[
