@@ -10,7 +10,8 @@ import pybullet as p
 import pytest
 
 from neat_walking_robot.environments.base import BaseEnvironmentData
-from neat_walking_robot.environments.heightfield import RoughEnvironmentData
+from neat_walking_robot.environments.rough import RoughEnvironmentData
+from neat_walking_robot.environments.slope import SlopeEnvironmentData
 
 
 @pytest.fixture
@@ -61,6 +62,14 @@ ROUGH_PARAMS = {
     "wavelength_range": (0.5, 2.0),
 }
 
+# With these values the ramp spans 6 - (1 + 1 + 2 * 0.5) = 3 m horizontally
+# and rises tan(15 deg) * 3 = 0.80 m, so the walls must be taller than in BASE_PARAMS.
+SLOPE_PARAMS = {
+    **BASE_PARAMS,
+    "wall_height": 2.0,
+    "incline": 15.0,
+}
+
 
 @pytest.fixture
 def make_base_params():
@@ -78,5 +87,15 @@ def make_rough_params():
 
     def factory(**overrides) -> RoughEnvironmentData:
         return RoughEnvironmentData(**{**ROUGH_PARAMS, **overrides})
+
+    return factory
+
+
+@pytest.fixture
+def make_slope_params():
+    """Factory for valid ramp parameters; keyword overrides change single fields."""
+
+    def factory(**overrides) -> SlopeEnvironmentData:
+        return SlopeEnvironmentData(**{**SLOPE_PARAMS, **overrides})
 
     return factory

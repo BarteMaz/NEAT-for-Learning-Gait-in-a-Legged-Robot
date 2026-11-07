@@ -15,9 +15,8 @@ class BaseEnvironmentData:
     end_distance: float
     start_distance: float
     friction: float
-    end_distance: float
-    start_distance: float
     lowest_ground_point: float = 0.0
+    buffer_space: float = 0.5
 
     def __post_init__(self):
         # Check for negatives
@@ -34,7 +33,7 @@ class BaseEnvironmentData:
         if self.ground_thickness <= 0:
             raise ValueError("Ground height must be greater than 0")
         # Check for contradictions
-        if self.end_distance + self.start_distance > self.track_length:
+        if self.end_distance + self.start_distance >= self.track_length:
             raise ValueError("The sum of start and end distance must be less than the track length")
         if self.start_distance < 0.5 or self.end_distance < 0.5:
             raise ValueError("The start and end distance must be more or equal to 0.5")
@@ -75,26 +74,34 @@ class BaseEnvironment(ABC, Generic[ParamsT]):
 
     def build_side_walls(self):
         wall_left = self.build_static_box(
-            [self.params.track_length / 2, self.params.wall_thickness / 2, (self.params.wall_height - self.params.lowest_ground_point) / 2],
-            [0, -(self.params.track_width + self.params.wall_thickness) / 2, self.params.wall_height / 2 - self.params.lowest_ground_point],
+            [self.params.track_length / 2, self.params.wall_thickness / 2,
+             (self.params.wall_height - self.params.lowest_ground_point) / 2],
+            [0, -(self.params.track_width + self.params.wall_thickness) / 2,
+             (self.params.wall_height + self.params.lowest_ground_point) / 2],
             [0, 0, 1, 1]
         )
         wall_right = self.build_static_box(
-            [self.params.track_length / 2, self.params.wall_thickness / 2, (self.params.wall_height - self.params.lowest_ground_point) / 2],
-            [0, (self.params.track_width + self.params.wall_thickness) / 2, self.params.wall_height / 2 - self.params.lowest_ground_point],
+            [self.params.track_length / 2, self.params.wall_thickness / 2,
+             (self.params.wall_height - self.params.lowest_ground_point) / 2],
+            [0, (self.params.track_width + self.params.wall_thickness) / 2,
+             (self.params.wall_height + self.params.lowest_ground_point) / 2],
             [0, 0, 1, 1]
         )
         return wall_left, wall_right
 
     def build_front_and_back_wall(self):
         wall_front = self.build_static_box(
-            [self.params.wall_thickness / 2, self.params.track_width / 2, (self.params.wall_height - self.params.lowest_ground_point) / 2],
-            [(self.params.track_length + self.params.wall_thickness) / 2, 0, self.params.wall_height / 2 - self.params.lowest_ground_point],
+            [self.params.wall_thickness / 2, self.params.track_width / 2,
+             (self.params.wall_height - self.params.lowest_ground_point) / 2],
+            [(self.params.track_length + self.params.wall_thickness) / 2, 0,
+             (self.params.wall_height + self.params.lowest_ground_point) / 2],
             [0, 0, 1, 1]
         )
         wall_back = self.build_static_box(
-            [self.params.wall_thickness / 2, self.params.track_width / 2, (self.params.wall_height - self.params.lowest_ground_point) / 2],
-            [-(self.params.track_length + self.params.wall_thickness) / 2, 0, self.params.wall_height / 2 - self.params.lowest_ground_point],
+            [self.params.wall_thickness / 2, self.params.track_width / 2,
+             (self.params.wall_height - self.params.lowest_ground_point) / 2],
+            [-(self.params.track_length + self.params.wall_thickness) / 2, 0,
+             (self.params.wall_height + self.params.lowest_ground_point) / 2],
             [0, 0, 1, 1]
         )
 

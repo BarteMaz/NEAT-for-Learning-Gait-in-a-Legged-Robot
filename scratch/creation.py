@@ -55,7 +55,7 @@ p.changeDynamics(cube, -1, lateralFriction=0.5 ,physicsClientId=client)
 #     physicsClientId=client
 # )
 
-
+print(p.getQuaternionFromEuler([0,0,0]))
 if client_type == p.DIRECT:
     for _ in range(100000):
         p.stepSimulation(physicsClientId=client)

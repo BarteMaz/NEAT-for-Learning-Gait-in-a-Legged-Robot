@@ -9,13 +9,15 @@ import pytest
 
 from neat_walking_robot.environments.base import BaseEnvironment
 from neat_walking_robot.environments.flat import FlatEnvironment
-from neat_walking_robot.environments.heightfield import RoughEnvironment
+from neat_walking_robot.environments.rough import RoughEnvironment
+from neat_walking_robot.environments.slope import SlopeEnvironment
 
 TOL = 1e-6  # metres; geometry is computed exactly, only float rounding is allowed
 
 ENVIRONMENTS = [
     pytest.param((FlatEnvironment, "make_base_params"), id="flat"),
     pytest.param((RoughEnvironment, "make_rough_params"), id="rough"),
+    pytest.param((SlopeEnvironment, "make_slope_params"), id="slope"),
 ]
 
 

@@ -4,7 +4,7 @@ import numpy as np
 import pybullet as p
 import pytest
 
-from neat_walking_robot.environments.heightfield import RoughEnvironment
+from neat_walking_robot.environments.rough import RoughEnvironment
 
 
 def _height_profile(env, xs, ys):

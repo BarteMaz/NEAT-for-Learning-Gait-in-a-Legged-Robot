@@ -11,22 +11,40 @@ class RoughEnvironmentData(BaseEnvironmentData):
     transition_distance: float
     n_waves: int
     wavelength_range: tuple[float, float]
+
     def __post_init__(self):
         super().__post_init__()
+        if -self.amplitude < self.lowest_ground_point:
+            raise ValueError(
+                f"Negative amplitude ({-self.amplitude} m) must be within the lowest ground point ({self.lowest_ground_point} m)")
+
+        if self.amplitude <= 0.0:
+            raise ValueError(f"Amplitude ({self.amplitude}) must be greater than 0")
+
+        if self.cell_size <= 0.0:
+            raise ValueError(f"Cell size ({self.cell_size}) must be greater than 0")
+
+        if self.transition_distance <= 0.0:
+            raise ValueError(f"Transition distance ({self.transition_distance}) must be greater than 0")
+
+        if self.n_waves <= 0:
+            raise ValueError(f"Number of waves ({self.n_waves}) must be at least 1")
+
+        if self.wavelength_range[0] > self.wavelength_range[1]:
+            raise ValueError(
+                f"Incorrect wavelength range ({self.wavelength_range[0]}, {self.wavelength_range[1]}) the start of range is greater than the end of range")
+
         rows = int(np.round(self.track_length / self.cell_size)) + 1
         cols = int(np.round(self.track_width / self.cell_size)) + 1
         l_eff = (rows - 1) * self.cell_size
         w_eff = (cols - 1) * self.cell_size
         if abs(l_eff - self.track_length) > 1e-9 or abs(w_eff - self.track_width) > 1e-9:
-            print(f"Uwaga: L/C lub W/C nie jest całkowite, teren ma {l_eff:.3f} x {w_eff:.3f} m")
-            raise ValueError(f"Error: track_length / cell_size or track_width / cell_size is not an integer, track has {l_eff:.3f} x {w_eff:.3f} m")
+            raise ValueError(
+                f"Error: track_length / cell_size or track_width / cell_size is not an integer, track has {l_eff:.3f} x {w_eff:.3f} m")
 
         lam_min, lam_max = self.wavelength_range
         if lam_min < 4 * self.cell_size:
             raise ValueError(f"The shortest wave {lam_min} m is less then 4 cells ({4 * self.cell_size} m)")
-
-        if -self.amplitude < self.lowest_ground_point:
-            raise ValueError(f"Negative amplitude ({-self.amplitude} m) must be within the lowest ground point ({self.lowest_ground_point} m)")
 
 
 def smoothstep(t):
@@ -37,13 +55,11 @@ class RoughEnvironment(BaseEnvironment[RoughEnvironmentData]):
     def __init__(self, params: RoughEnvironmentData, client: int, seed: int):
         super().__init__(params, client, seed)
         self.rng = np.random.default_rng(seed)
-        self.flat_area = self.params.start_distance + 0.5
+        self.flat_area = self.params.start_distance + self.params.buffer_space
         self.rows = int(np.round(self.params.track_length / self.params.cell_size)) + 1
         self.cols = int(np.round(self.params.track_width / self.params.cell_size)) + 1
         self.max_slope_deg = None
         self.ground = self.build_ground()
-
-
 
     def make_grid(self):
         rows = self.rows
@@ -84,7 +100,6 @@ class RoughEnvironment(BaseEnvironment[RoughEnvironmentData]):
         gx, gy = np.gradient(h, self.params.cell_size, self.params.cell_size)
         return np.degrees(np.arctan(np.hypot(gx, gy).max()))
 
-
     def build_ground(self):
         x_dist, y_dist = self.make_grid()
         height_data_0 = self.generate_terrain(x_dist, y_dist)
@@ -111,4 +126,3 @@ class RoughEnvironment(BaseEnvironment[RoughEnvironmentData]):
     def get_ground_level(self, x: float, y: float) -> float:
         hit = p.rayTest([x, y, -5], [x, y, 5], physicsClientId=self.client)[0]
         return hit[3][2] if hit[0] == self.ground else -1.0
-
