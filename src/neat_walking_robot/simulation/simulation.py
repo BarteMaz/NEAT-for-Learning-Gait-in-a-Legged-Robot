@@ -24,7 +24,7 @@ def prepare_simulation(simulation_params: SimulationData, client: int) -> None:
     p.setAdditionalSearchPath(pybullet_data.getDataPath(), physicsClientId=client)
     p.setGravity(gx, gy, gz, physicsClientId=client)
     p.setPhysicsEngineParameter(
-        timeStep=simulation_params.dt,
+        fixedTimeStep=simulation_params.dt,
         numSolverIterations=simulation_params.num_solver_iterations,
         physicsClientId=client
     )
