@@ -1,7 +1,9 @@
-from neat_walking_robot.environments.base import BaseEnvironment, BaseEnvironmentData
 from dataclasses import dataclass
-import pybullet as p
+
 import numpy as np
+import pybullet as p
+
+from neat_walking_robot.environments.base import BaseEnvironment, BaseEnvironmentData
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -30,10 +32,6 @@ class RoughEnvironmentData(BaseEnvironmentData):
         if self.n_waves <= 0:
             raise ValueError(f"Number of waves ({self.n_waves}) must be at least 1")
 
-        if self.wavelength_range[0] > self.wavelength_range[1]:
-            raise ValueError(
-                f"Incorrect wavelength range ({self.wavelength_range[0]}, {self.wavelength_range[1]}) the start of range is greater than the end of range")
-
         rows = int(np.round(self.track_length / self.cell_size)) + 1
         cols = int(np.round(self.track_width / self.cell_size)) + 1
         l_eff = (rows - 1) * self.cell_size
@@ -43,6 +41,9 @@ class RoughEnvironmentData(BaseEnvironmentData):
                 f"Error: track_length / cell_size or track_width / cell_size is not an integer, track has {l_eff:.3f} x {w_eff:.3f} m")
 
         lam_min, lam_max = self.wavelength_range
+        if lam_min > lam_max:
+            raise ValueError(
+                f"Incorrect wavelength range ({lam_min}, {lam_max}) the start of range is greater than the end of range")
         if lam_min < 4 * self.cell_size:
             raise ValueError(f"The shortest wave {lam_min} m is less then 4 cells ({4 * self.cell_size} m)")
 
@@ -113,6 +114,7 @@ class RoughEnvironment(BaseEnvironment[RoughEnvironmentData]):
             heightfieldData=height_data.flatten(order="F").tolist(),
             numHeightfieldRows=self.rows,
             numHeightfieldColumns=self.cols,
+            heightfieldTextureScaling=(self.rows - 1) / 2,
             flags=p.GEOM_CONCAVE_INTERNAL_EDGE,
             physicsClientId=self.client
         )

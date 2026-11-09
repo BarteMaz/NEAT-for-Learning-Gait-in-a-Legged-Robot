@@ -4,21 +4,23 @@ from time import perf_counter
 
 
 client = p.connect(p.DIRECT)
-client1 = p.connect(p.DIRECT)
 
 p.setAdditionalSearchPath(pybullet_data.getDataPath(), physicsClientId=client)
-p.setGravity(0, 0, -9.81, physicsClientId=client)
-
-p.setAdditionalSearchPath(pybullet_data.getDataPath(), physicsClientId=client1)
-p.setGravity(0, 0, -9.81, physicsClientId=client1)
+p.setGravity(3434, 3434, 2.0, physicsClientId=client)
 
 plane = p.loadURDF("plane.urdf")
-
 num0 = p.getNumBodies(physicsClientId=client)
-num1 = p.getNumBodies(physicsClientId=client1)
+print("Symulacja z ustawieniami")
+print(num0)
+print(p.getPhysicsEngineParameters(physicsClientId=client))
 
-print(num0, num1)
-print(f"Serwer0: {num0}; Serwer1: {num1}")
+p.resetSimulation(physicsClientId=client)
+num0 = p.getNumBodies(physicsClientId=client)
+print("Symulacja z ustawieniami")
+print(num0)
+print(p.getPhysicsEngineParameters(physicsClientId=client))
+
+
 p.disconnect(client)
-p.disconnect(client1)
+
 

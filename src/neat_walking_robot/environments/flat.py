@@ -1,5 +1,7 @@
-from neat_walking_robot.environments.base import BaseEnvironmentData, BaseEnvironment
 import pybullet as p
+
+from neat_walking_robot.environments.base import BaseEnvironment, BaseEnvironmentData
+
 
 class FlatEnvironment(BaseEnvironment[BaseEnvironmentData]):
     def __init__(self, params: BaseEnvironmentData, client: int, seed: int):

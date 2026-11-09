@@ -1,7 +1,9 @@
-from neat_walking_robot.environments.base import BaseEnvironment, BaseEnvironmentData
 from dataclasses import dataclass
-import pybullet as p
+
 import numpy as np
+import pybullet as p
+
+from neat_walking_robot.environments.base import BaseEnvironment, BaseEnvironmentData
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -75,9 +77,7 @@ class SlopeEnvironment(BaseEnvironment[SlopeEnvironmentData]):
 
     def get_ground_level(self, x: float, y: float):
         ground_level = -1.0
-        if x < -self.params.track_length / 2 or x > self.params.track_length / 2:
-            pass
-        elif y < -self.params.track_width / 2 or y > self.params.track_width / 2:
+        if x < -self.params.track_length / 2 or x > self.params.track_length / 2 or y < -self.params.track_width / 2 or y > self.params.track_width / 2:
             pass
         elif -self.params.track_length / 2 <= x <= (-self.params.track_length / 2 + self.start_platform_length):
             ground_level = 0.0
