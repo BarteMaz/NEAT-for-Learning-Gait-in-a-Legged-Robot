@@ -25,25 +25,24 @@ The owner is writing this as an engineering thesis and wants to understand every
 
 ```
 uv sync
-uv run python src/simulation.py
-uv run pytest        # no tests yet
+uv run pytest        
 uv run ruff check .
 ```
 
-Imports are relative to `src/` (e.g. `from exceptions.exceptions import URDFLoadError`), so run scripts from the repo root as above. Use `pathlib` for paths.
-
 ## Layout
 
-- `src/neat_walking_robot/main.py`: early PyBullet script (load plane and URDF, run the loop).
-- `src/neat_walking_robot/robots`: URDF models. `src/neat_walking_robot/exceptions`: custom exceptions.
+- `src/neat_walking_robot/evironments`: module with classes and dataclasses for 3 different environments with factory
+- `src/neat_walking_robot/simulation`: module that handles creating and preparing simulation
 - `guides/`: URDF guide and PyBullet quickstart.
+- `scratch/`: folder for experimenting with PyBullet and learning new features 
+- `tests/`: folder with tests for each module
 
 ## Plan (one learning session per stage)
 
-1. PyBullet basics and three environments: flat fenced arena, fenced bumpy terrain, fenced arena with a ramp.
+1. DONE: PyBullet basics and three environments: flat fenced arena, fenced bumpy terrain, fenced arena with a ramp. 
 2. URDF and manual robot control.
 3. Quadruped model - mixed approach (own URDF and e.g. Unitree Go1, BSD-3-Clause)
 4. neat-python basics.
 5. Training process: fitness function, thresholds, checkpoints, progressive harder environments.
 6. Analytics layer (data for the thesis).
-7. Tests.
+7. IN PROGRES: Tests.
