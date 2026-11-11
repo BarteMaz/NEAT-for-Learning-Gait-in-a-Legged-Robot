@@ -31,7 +31,7 @@ uv run ruff check .
 
 ## Layout
 
-- `src/neat_walking_robot/evironments`: module with classes and dataclasses for 3 different environments with factory
+- `src/neat_walking_robot/environments`: module with classes and dataclasses for 3 different environments with factory
 - `src/neat_walking_robot/simulation`: module that handles creating and preparing simulation
 - `guides/`: URDF guide and PyBullet quickstart.
 - `scratch/`: folder for experimenting with PyBullet and learning new features 
@@ -45,4 +45,4 @@ uv run ruff check .
 4. neat-python basics.
 5. Training process: fitness function, thresholds, checkpoints, progressive harder environments.
 6. Analytics layer (data for the thesis).
-7. IN PROGRES: Tests.
+7. IN PROGRESS: Tests.

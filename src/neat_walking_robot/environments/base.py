@@ -115,7 +115,7 @@ class BaseEnvironment(ABC, Generic[ParamsT]):
             lineToXYZ=[self.params.track_length / 2 - self.params.end_distance, self.params.track_width / 2,
                        self.get_ground_level(self.params.track_length / 2 - self.params.end_distance,
                                              -self.params.track_width / 2) + 1],
-            lineColorRGB=[0, 1, 0, 1],
+            lineColorRGB=[0, 1, 0],
             physicsClientId=self.client
         )
 
