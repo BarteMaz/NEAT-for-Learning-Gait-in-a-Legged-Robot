@@ -18,7 +18,6 @@ env_data = BaseEnvironmentData(
     start_distance= 1.0,
     friction= 1.0,
     lowest_ground_point= -2.0,
-
 )
 
 client = p.connect(client_type)

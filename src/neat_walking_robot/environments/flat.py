@@ -13,7 +13,7 @@ class FlatEnvironment(BaseEnvironment[BaseEnvironmentData]):
         plane = self.build_static_box(
             [self.params.track_length / 2, self.params.track_width / 2, self.params.ground_thickness / 2],
             [0, 0, -self.params.ground_thickness / 2],
-            [1, 0, 0, 0.5]
+            [0.6, 0.7, 0.6, 1]
         )
         p.changeDynamics(plane, -1, lateralFriction=self.params.friction, physicsClientId=self.client)
         return plane

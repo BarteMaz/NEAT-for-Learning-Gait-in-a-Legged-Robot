@@ -45,4 +45,3 @@ fig, ax = plt.subplots()
 ax.plot(degrees, distances)
 ax.set(xlabel='degrees', ylabel='distance', yscale='log')
 plt.show()
-
