@@ -26,6 +26,7 @@ def prepare_simulation(simulation_params: SimulationData, client: int) -> None:
     p.setPhysicsEngineParameter(
         fixedTimeStep=simulation_params.dt,
         numSolverIterations=simulation_params.num_solver_iterations,
+        deterministicOverlappingPairs=1,
         physicsClientId=client
     )
 
