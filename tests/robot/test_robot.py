@@ -9,10 +9,11 @@ Contract checked here (agreed 2026-11-12):
 
 Observation layout (from robot.py, documented order):
   [0:12] joint angles, [12:24] joint velocities, [24:26] roll, pitch,
-  [26:29] base angular velocity, [29:33] toe contacts.
+  [26:29] base angular velocity, [29:33] toe contacts, [33] yaw (added 2026-11-14).
 """
 
 import dataclasses
+import math
 
 import numpy as np
 import pybullet as p
@@ -28,12 +29,13 @@ from neat_walking_robot.robot.robot import (
 from neat_walking_robot.simulation import SimulationData, prepare_simulation
 
 N_JOINTS = 12
-OBS_LEN = 33
+OBS_LEN = 34
 JOINT_POS = slice(0, 12)
 JOINT_VEL = slice(12, 24)
 ROLL, PITCH = 24, 25
 ANG_VEL = slice(26, 29)
 CONTACTS = slice(29, 33)
+YAW = 33
 
 ANGLE_TOL = 0.05  # rad; position control under load leaves a small error
 
@@ -219,9 +221,8 @@ def test_extreme_actions_stay_in_working_range(client, value):
     for _ in range(120):
         robot.apply_action(np.full(N_JOINTS, value))
         step(robot, 4)
-        for name, state in robot.get_joints_state().items():
-            torque = p.getJointState(robot.robot_id, robot.moving_joints_id[name],
-                                     physicsClientId=client)[3]
+        for name, joint_id in robot.moving_joints_id.items():
+            torque = p.getJointState(robot.robot_id, joint_id, physicsClientId=client)[3]
             max_torque[name] = max(max_torque[name], abs(torque))
     for name, torque in max_torque.items():
         assert torque <= robot.moving_joints_efforts[name] + 1e-6, f"{name} exceeded effort"
@@ -265,6 +266,15 @@ def test_roll_and_pitch_are_scaled_by_fall_threshold(robot):
     obs = robot.get_observation()
     assert obs[ROLL] == pytest.approx(roll / A1_ROBOT_SPEC.fall_threshold, abs=1e-6)
     assert obs[PITCH] == pytest.approx(pitch / A1_ROBOT_SPEC.fall_threshold, abs=1e-6)
+
+
+def test_yaw_is_scaled_by_half_pi(robot):
+    """Heading error of 90 degrees reads as 1.0; the robot starts facing +x, so yaw starts near 0."""
+    assert abs(robot.get_observation()[YAW]) < 0.05
+    pos, _ = base_state(robot)
+    p.resetBasePositionAndOrientation(robot.robot_id, pos, p.getQuaternionFromEuler([0, 0, 0.6]),
+                                      physicsClientId=robot.client_id)
+    assert robot.get_observation()[YAW] == pytest.approx(0.6 / (math.pi / 2), abs=1e-6)
 
 
 def test_base_angular_velocity_is_scaled(robot):

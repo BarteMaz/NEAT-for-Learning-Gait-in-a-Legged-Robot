@@ -1,12 +1,10 @@
-import pybullet as p
-import numpy as np
-
-from neat_walking_robot.robot.joints import (
-    JointType,
-    get_joints_info
-)
-
 from dataclasses import dataclass
+
+import numpy as np
+import pybullet as p
+
+from neat_walking_robot.robot.joints import JointType, get_joints_info
+
 
 @dataclass(frozen=True, kw_only=True)
 class RobotSpec:
@@ -81,8 +79,8 @@ class Robot:
 
         # check for joints and links names compatibility
         joints_info = get_joints_info(self.robot_id, self.client_id)
-        available_joints_names = set([joint.joint_name for joint in joints_info.values()])
-        available_links_names = set([joint.link_name for joint in joints_info.values()])
+        available_joints_names = {joint.joint_name for joint in joints_info.values()}
+        available_links_names = {joint.link_name for joint in joints_info.values()}
         if not set(self.toes_links_names).issubset(available_links_names):
             raise ValueError(f"Toes links names in robot specification are not valid! Available links names: {available_links_names}")
         if not set(self.rest_position.keys()).issubset(available_joints_names):
@@ -182,8 +180,10 @@ class Robot:
     def get_observation(self) -> np.ndarray:
         base_ang_velocity = list(p.getBaseVelocity(self.robot_id, physicsClientId=self.client_id)[1])
         base_ang_velocity_scaled = [x / self.base_velocity_scale for x in base_ang_velocity]
-        roll_and_pitch = p.getEulerFromQuaternion(p.getBasePositionAndOrientation(self.robot_id, physicsClientId=self.client_id)[1])[0:2]
-        roll_and_pitch_scaled = [x / self.fall_threshold for x in roll_and_pitch]
+
+        orientation = p.getEulerFromQuaternion(p.getBasePositionAndOrientation(self.robot_id, physicsClientId=self.client_id)[1])
+        roll_and_pitch_scaled = [x / self.fall_threshold for x in orientation[0:2]]
+        yaw_scaled = [orientation[2] / (np.pi / 2)]
 
         toes_contacts = self.get_toes_contact_points()
         toes_contacts_list = [x for x in toes_contacts.values()]
@@ -192,7 +192,7 @@ class Robot:
         joints_position_list = [scale_to_neat_input(joint[0], self.moving_joints_limits[name]) for name, joint in joints_state.items()]
         joints_velocity_list = [joint[1] / self.joints_velocity_scale for joint in joints_state.values()]
 
-        observation_vector = joints_position_list + joints_velocity_list + roll_and_pitch_scaled + base_ang_velocity_scaled + toes_contacts_list
+        observation_vector = joints_position_list + joints_velocity_list + roll_and_pitch_scaled + base_ang_velocity_scaled + toes_contacts_list + yaw_scaled
 
         return np.array(observation_vector)
 

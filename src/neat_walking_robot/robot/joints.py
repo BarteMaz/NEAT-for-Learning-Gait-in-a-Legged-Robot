@@ -1,8 +1,9 @@
-import pybullet as p
-import numpy as np
-
 from dataclasses import dataclass
 from enum import IntEnum
+
+import numpy as np
+import pybullet as p
+
 
 class JointType(IntEnum):
     FIXED = p.JOINT_FIXED
