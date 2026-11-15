@@ -11,13 +11,13 @@ g = 9.81
 env_data = RoughEnvironmentData(
     track_length= 10,
     track_width= 3.0,
-    wall_height= 0.5,
+    wall_height= 2,
     wall_thickness= 0.5,
     ground_thickness= 0.20,
     end_distance= 1.0,
     start_distance= 1.0,
     friction= 1.0,
-    lowest_ground_point= -0.2,
+    lowest_ground_point= -1,
     buffer_space=0.5,
     cell_size= 0.05,
     amplitude=0.2,
@@ -33,12 +33,11 @@ p.setGravity(0, 0, -g, physicsClientId=client)
 p.setTimeStep(dt, physicsClientId=client)
 p.configureDebugVisualizer(p.COV_ENABLE_SHADOWS, 0, physicsClientId=client)
 
-print(p.getPhysicsEngineParameters(physicsClientId=client))
 env1 = RoughEnvironment(env_data, client, 0)
-# p.changeVisualShape(env1.wall_left, -1, rgbaColor=[0.0, 1.0, 0.0, 0.1], physicsClientId=client)
-# p.changeVisualShape(env1.wall_right, -1, rgbaColor=[0.0, 1.0, 0.0, 0.1], physicsClientId=client)
-# p.changeVisualShape(env1.wall_front, -1, rgbaColor=[0.0, 1.0, 0.0, 0.1], physicsClientId=client)
-# p.changeVisualShape(env1.wall_back, -1, rgbaColor=[0.0, 1.0, 0.0, 0.1], physicsClientId=client)
+p.changeVisualShape(env1.wall_left, -1, rgbaColor=[0.0, 1.0, 0.0, 0.1], physicsClientId=client)
+p.changeVisualShape(env1.wall_right, -1, rgbaColor=[0.0, 1.0, 0.0, 0.1], physicsClientId=client)
+p.changeVisualShape(env1.wall_front, -1, rgbaColor=[0.0, 1.0, 0.0, 0.1], physicsClientId=client)
+p.changeVisualShape(env1.wall_back, -1, rgbaColor=[0.0, 1.0, 0.0, 0.1], physicsClientId=client)
 
 
 if client_type == p.DIRECT:

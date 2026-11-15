@@ -6,6 +6,7 @@ from neat_walking_robot.training.episode import (
 )
 from neat_walking_robot.training.evaluation import (
     TrainingConfig,
+    make_policy,
     eval_genome,
     init_worker,
 )
@@ -20,5 +21,6 @@ __all__ = [
     "eval_genome",
     "fitness_v1",
     "init_worker",
+    "make_policy",
     "run_episode"
 ]

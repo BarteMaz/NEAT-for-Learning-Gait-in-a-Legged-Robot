@@ -9,7 +9,7 @@ dt = 1/240
 g = 9.81
 
 env_data = SlopeEnvironmentData(
-    track_length= 10,
+    track_length= 6,
     track_width= 3.0,
     wall_height= 3.0,
     wall_thickness= 0.5,

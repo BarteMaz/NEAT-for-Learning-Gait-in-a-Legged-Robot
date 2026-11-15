@@ -14,7 +14,7 @@ a1 = p.loadURDF("a1/a1.urdf", flags=p.URDF_USE_INERTIA_FROM_FILE, basePosition=[
 #     p.stepSimulation(physicsClientId=client)
 #     time.sleep(1/240)
 
-
+joint_table(a1, client)
 p.disconnect(client)
 
 

@@ -7,7 +7,7 @@ import time
 import numpy as np
 
 sim_data = SimulationData()
-client = connect_and_configure_simulation(sim_data, client_type=p.DIRECT)
+client = connect_and_configure_simulation(sim_data, client_type=p.GUI)
 
 env_data = BaseEnvironmentData(
     track_length= 8.0,
@@ -31,34 +31,34 @@ a1_robot = Robot(A1_ROBOT_SPEC, flat_env.get_starting_pos(), client)
 
 value = [0.0, 0.8, -1.5, 0.0, 0.8, -1.5, 0.0, 0.8, -1.5, 0.0, 0.8, -1.5]
 
-# qKey = ord('q')
-# rKey = ord('r')
-#
-# while p.isConnected(physicsClientId=client):
+qKey = ord('q')
+rKey = ord('r')
+
+while p.isConnected(physicsClientId=client):
+    p.stepSimulation(physicsClientId=client)
+    keys = p.getKeyboardEvents()
+    if qKey in keys and keys[qKey] & p.KEY_WAS_TRIGGERED:
+        for i in range(180):
+            a1_robot.apply_action(value)
+            p.stepSimulation(physicsClientId=client)
+            b_pos, b_or = p.getBasePositionAndOrientation(a1_robot.robot_id)
+            X, Y, Z = p.getEulerFromQuaternion(b_or)
+            print(
+                f"Base position: {b_pos[0]}, {b_pos[1]}, {b_pos[2]}; Base orientation: {X}, {Y}, {Z}")
+            time.sleep(1 / 240)
+            value[2] += -0.01
+            value[8] += -0.01
+        joints_state2 = a1_robot.get_joints_state()
+    elif rKey in keys and keys[rKey] & p.KEY_WAS_TRIGGERED:
+        a1_robot.reset()
+    time.sleep(1/240)
+
+# for i in range(120):
 #     p.stepSimulation(physicsClientId=client)
-#     keys = p.getKeyboardEvents()
-#     if qKey in keys and keys[qKey] & p.KEY_WAS_TRIGGERED:
-#         for i in range(180):
-#             a1_robot.apply_action(value)
-#             p.stepSimulation(physicsClientId=client)
-#             b_pos, b_or = p.getBasePositionAndOrientation(a1_robot.robot_id)
-#             X, Y, Z = p.getEulerFromQuaternion(b_or)
-#             print(
-#                 f"Base position: {b_pos[0]}, {b_pos[1]}, {b_pos[2]}; Base orientation: {X}, {Y}, {Z}")
-#             time.sleep(1 / 240)
-#             value[2] += -0.01
-#             value[8] += -0.01
-#         joints_state2 = a1_robot.get_joints_state()
-#     elif rKey in keys and keys[rKey] & p.KEY_WAS_TRIGGERED:
-#         a1_robot.reset()
-#     time.sleep(1/240)
-
-for i in range(120):
-    p.stepSimulation(physicsClientId=client)
-
-a1_robot.apply_action(value)
-for i in range(360):
-    p.stepSimulation(physicsClientId=client)
-
-for i in a1_robot.get_observation():
-    print(f"{i:.3f}", end=" ")
+#
+# a1_robot.apply_action(value)
+# for i in range(360):
+#     p.stepSimulation(physicsClientId=client)
+#
+# for i in a1_robot.get_observation():
+#     print(f"{i:.3f}", end=" ")

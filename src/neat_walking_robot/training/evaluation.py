@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import Callable
 
 import neat
 import numpy as np
@@ -34,13 +35,16 @@ def init_worker(training_config: TrainingConfig):
     robot = Robot(training_config.robot_spec, env.get_starting_pos(), client)
     _worker.update(client=client, env=env, robot=robot, config=training_config)
 
+def make_policy(net, episode_params) -> Callable[[np.ndarray, float], list[float]]:
+    return lambda obs, t : net.activate(list(obs) + [np.sin(np.pi * 2 * episode_params.frequency * t), np.cos(np.pi * 2 * episode_params.frequency * t)])
+
 def eval_genome(genome, config):
     episode_params: EpisodeParams = _worker["config"].episode_params
     fitness_params: FitnessParams = _worker["config"].fitness_params
     dt = _worker["config"].simulation_data.dt
 
     net = neat.nn.FeedForwardNetwork.create(genome, config)
-    policy = lambda obs, t : net.activate(list(obs) + [np.sin(np.pi * 2 * episode_params.frequency * t), np.cos(np.pi * 2 * episode_params.frequency * t)])
+    policy = make_policy(net, episode_params)
     metrics = run_episode(_worker["robot"], _worker["env"], policy, dt, episode_params)
 
     return fitness_v1(metrics, fitness_params)
