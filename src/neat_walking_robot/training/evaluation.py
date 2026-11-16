@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from typing import Callable
+from pathlib import Path
 
 import neat
 import numpy as np
@@ -24,6 +25,7 @@ class TrainingConfig:
     robot_spec: RobotSpec
     episode_params: EpisodeParams
     fitness_params: FitnessParams
+    neat_config_path: Path
     seed: int
 
 _worker = {}

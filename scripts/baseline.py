@@ -20,7 +20,7 @@ from neat_walking_robot.training import (
     run_episode,
     fitness_v1,
 )
-
+from pathlib import Path
 import pybullet as p
 import numpy as np
 import json
@@ -55,6 +55,7 @@ def default_training_config() -> TrainingConfig:
         robot_spec=robot_data,
         episode_params=episode_params,
         fitness_params=fit_params,
+        neat_config_path=Path(""),
         seed=42
     )
 

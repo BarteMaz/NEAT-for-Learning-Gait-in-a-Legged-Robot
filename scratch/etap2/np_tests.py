@@ -1,7 +1,8 @@
 import numpy as np
+from datetime import datetime
 
+now = datetime.now()
 
-l = np.array([0,1,2,3,4,5,6,7,8])
-r = np.array([2, 3])
+formatted = now.strftime("%Y-%m-%d_%H:%M:%S")
 
-print(np.concatenate((l,r)))
+print(formatted)

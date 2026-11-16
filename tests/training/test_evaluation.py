@@ -36,6 +36,7 @@ TRAINING = evaluation.TrainingConfig(
     robot_spec=A1_ROBOT_SPEC,
     episode_params=EpisodeParams(episode_time=2.0, frequency=3, k=4),  # short: tests stay fast
     fitness_params=FitnessParams(goal_bonus=2.0, penalty=1.0),
+    neat_config_path=Path(CONFIG_PATH),
     seed=0,
 )
 
