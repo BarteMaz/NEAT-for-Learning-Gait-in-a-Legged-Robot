@@ -23,6 +23,11 @@ env_data = BaseEnvironmentData(
 )
 
 flat_env = FlatEnvironment(env_data, client, 0)
+p.changeVisualShape(flat_env.wall_left, -1, rgbaColor=[0.0, 1.0, 0.0, 0.1], physicsClientId=client)
+p.changeVisualShape(flat_env.wall_right, -1, rgbaColor=[0.0, 1.0, 0.0, 0.1], physicsClientId=client)
+p.changeVisualShape(flat_env.wall_front, -1, rgbaColor=[0.0, 1.0, 0.0, 0.1], physicsClientId=client)
+p.changeVisualShape(flat_env.wall_back, -1, rgbaColor=[0.0, 1.0, 0.0, 0.1], physicsClientId=client)
+
 
 a1 = Robot(A1_ROBOT_SPEC, flat_env.get_starting_pos(), client)
 
@@ -145,5 +150,7 @@ while p.isConnected(physicsClientId=client):
     action = sine_gait_action(t, params)
     a1.apply_action(action)
     for _ in range(k):
+        pos, _ = p.getBasePositionAndOrientation(a1.robot_id, physicsClientId=client)
+        p.resetDebugVisualizerCamera(8.0, 0, -89.9, [pos[0], pos[1], 0])
         p.stepSimulation(physicsClientId=client)
         time.sleep(dt)
