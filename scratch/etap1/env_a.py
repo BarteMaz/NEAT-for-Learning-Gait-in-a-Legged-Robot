@@ -18,7 +18,7 @@ env_data = BaseEnvironmentData(
     end_distance= 1.0,
     start_distance= 1.0,
     friction= 1.0,
-    lowest_ground_point= -2.0,
+    lowest_ground_point= 0.0,
 )
 
 client = p.connect(client_type)
@@ -29,7 +29,10 @@ p.setTimeStep(dt, physicsClientId=client)
 
 
 env1 = FlatEnvironment(env_data, client, 0)
-
+p.changeVisualShape(env1.wall_left, -1, rgbaColor=[0.0, 1.0, 0.0, 0.1], physicsClientId=client)
+p.changeVisualShape(env1.wall_right, -1, rgbaColor=[0.0, 1.0, 0.0, 0.1], physicsClientId=client)
+p.changeVisualShape(env1.wall_front, -1, rgbaColor=[0.0, 1.0, 0.0, 0.1], physicsClientId=client)
+p.changeVisualShape(env1.wall_back, -1, rgbaColor=[0.0, 1.0, 0.0, 0.1], physicsClientId=client)
 
 if client_type == p.DIRECT:
     for _ in range(100000):
