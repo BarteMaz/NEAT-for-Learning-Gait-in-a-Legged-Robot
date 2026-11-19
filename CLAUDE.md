@@ -33,6 +33,11 @@ uv run ruff check .
 
 - `src/neat_walking_robot/environments`: module with classes and dataclasses for 3 different environments with factory
 - `src/neat_walking_robot/simulation`: module that handles creating and preparing simulation
+- `src/neat_walking_robot/robot`: module with class that handles reading robot's info, loading it into simulation, controls its actions and returns observations
+- `src/neat_walking_robot/training`: module with functions that: run a training episode, calculate fitness, initializes training
+- `configs`: folder with neat configs
+- `scripts`: folder with scripts that will calculate a baseline, handles training loop and shows results
+- `results`: folder with training results
 - `guides/`: URDF guide and PyBullet quickstart.
 - `scratch/`: folder for experimenting with PyBullet and learning new features 
 - `tests/`: folder with tests for each module
@@ -40,9 +45,9 @@ uv run ruff check .
 ## Plan (one learning session per stage)
 
 1. DONE: PyBullet basics and three environments: flat fenced arena, fenced bumpy terrain, fenced arena with a ramp. 
-2. URDF and manual robot control.
-3. Quadruped model - mixed approach (own URDF and e.g. Unitree Go1, BSD-3-Clause)
-4. neat-python basics.
-5. Training process: fitness function, thresholds, checkpoints, progressive harder environments.
+2. DONE: URDF and manual robot control.
+3. DONE: Quadruped model - Unitree A1, URDF provided by PyBullet
+4. DONE: neat-python basics.
+5. IN PROGRESS: Training process: fitness function, thresholds, checkpoints, progressive harder environments.
 6. Analytics layer (data for the thesis).
 7. IN PROGRESS: Tests.

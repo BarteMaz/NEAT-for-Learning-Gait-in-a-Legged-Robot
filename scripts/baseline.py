@@ -1,63 +1,22 @@
-from dataclasses import asdict
-
-from neat_walking_robot.environments import (
-    EnvironmentType,
-    BaseEnvironmentData,
-    create_environment
-)
-from neat_walking_robot.robot import (
-    Robot,
-    A1_ROBOT_SPEC
-)
-from neat_walking_robot.simulation import (
-    SimulationData,
-    prepare_simulation
-)
+from neat_walking_robot.environments import create_environment
+from neat_walking_robot.robot import Robot
+from neat_walking_robot.simulation import prepare_simulation
 from neat_walking_robot.training import (
-    TrainingConfig,
-    FitnessParams,
-    EpisodeParams,
+    default_training_config,
     run_episode,
     fitness_v1,
 )
+from dataclasses import asdict
+from enum import Enum
 from pathlib import Path
 import pybullet as p
 import numpy as np
 import json
 
-def default_training_config() -> TrainingConfig:
-    simulation_data = SimulationData()
-    env_data = BaseEnvironmentData(
-        track_length=6.0,
-        track_width=3.0,
-        wall_height=3.0,
-        wall_thickness=0.25,
-        ground_thickness=0.20,
-        end_distance=1.0,
-        start_distance=1.0,
-        friction=1.0,
-        lowest_ground_point=-0.20,
-    )
-    robot_data = A1_ROBOT_SPEC
-    episode_params = EpisodeParams(
-        episode_time=10.0,
-        frequency=3.0,
-        k=4
-    )
-    fit_params = FitnessParams(
-        goal_bonus=2.0,
-        penalty=1.0,
-    )
-    return TrainingConfig(
-        simulation_data=simulation_data,
-        env_type=EnvironmentType.FLAT,
-        env_data=env_data,
-        robot_spec=robot_data,
-        episode_params=episode_params,
-        fitness_params=fit_params,
-        neat_config_path=Path(""),
-        seed=42
-    )
+def to_json(o):
+    if isinstance(o, Enum):
+        return o.name
+    return str(o)
 
 def sine_gait_action(t: float, f: float):
     a_thigh = 0.4
@@ -73,7 +32,7 @@ def sine_gait_action(t: float, f: float):
             FR_RL_calf]
 
 def run_baseline():
-    training_config = default_training_config()
+    training_config = default_training_config(Path(""), 42)
 
     sd = training_config.simulation_data
     et = training_config.env_type
@@ -97,7 +56,7 @@ def run_baseline():
         "fitness" : fitness,
         "velocity" : v,
     }
-
-    print(data)
+    with open("baseline_data.json", 'w', encoding="utf-8") as f:
+        json.dump(data, f, default=to_json, ensure_ascii=False, indent=2)
 
 run_baseline()

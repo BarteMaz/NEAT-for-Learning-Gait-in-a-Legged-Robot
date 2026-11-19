@@ -1,32 +1,16 @@
-from dataclasses import dataclass
 from typing import Callable
-from pathlib import Path
 
 import neat
 import numpy as np
 import pybullet as p
 
-from neat_walking_robot.environments import (
-    BaseEnvironmentData,
-    EnvironmentType,
-    create_environment,
-)
-from neat_walking_robot.robot import Robot, RobotSpec
-from neat_walking_robot.simulation import SimulationData, prepare_simulation
+from neat_walking_robot.environments import create_environment
+from neat_walking_robot.robot import Robot
+from neat_walking_robot.simulation import prepare_simulation
 from neat_walking_robot.training.episode import EpisodeParams, run_episode
 from neat_walking_robot.training.fitness import FitnessParams, fitness_v1
 
-
-@dataclass(frozen=True, kw_only=True)
-class TrainingConfig:
-    simulation_data: SimulationData
-    env_type: EnvironmentType
-    env_data: BaseEnvironmentData
-    robot_spec: RobotSpec
-    episode_params: EpisodeParams
-    fitness_params: FitnessParams
-    neat_config_path: Path
-    seed: int
+from neat_walking_robot.training.config import TrainingConfig
 
 _worker = {}
 
