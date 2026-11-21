@@ -8,6 +8,7 @@ def eval_genomes(genomes, config):
         net = neat.nn.FeedForwardNetwork.create(genome, config)
         genome.fitness = 4.0 - sum((net.activate(x)[0] - y) ** 2 for x, y in XOR)
 
+
 config = neat.Config(neat.DefaultGenome, neat.DefaultReproduction,
                      neat.DefaultSpeciesSet, neat.DefaultStagnation, str(Path(__file__).parent / "xor.ini"))
 

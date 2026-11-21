@@ -1,3 +1,10 @@
+from neat_walking_robot.training.config import (
+    TrainingConfig,
+    default_training_config,
+    save_training_config_to_json,
+    save_training_config_to_pickle,
+    to_json,
+)
 from neat_walking_robot.training.episode import (
     EndReason,
     EpisodeMetrics,
@@ -5,17 +12,12 @@ from neat_walking_robot.training.episode import (
     run_episode,
 )
 from neat_walking_robot.training.evaluation import (
-    make_policy,
     eval_genome,
+    eval_genomes,
     init_worker,
+    make_policy,
 )
 from neat_walking_robot.training.fitness import FitnessParams, fitness_v1
-from neat_walking_robot.training.config import (
-    TrainingConfig,
-    default_training_config,
-    save_training_config_to_pickle,
-    save_training_config_to_json
-)
 
 __all__ = [
     "EndReason",
@@ -25,10 +27,12 @@ __all__ = [
     "TrainingConfig",
     "default_training_config",
     "eval_genome",
+    "eval_genomes",
     "fitness_v1",
     "init_worker",
     "make_policy",
     "run_episode",
+    "save_training_config_to_json",
     "save_training_config_to_pickle",
-    "save_training_config_to_json"
+    "to_json",
 ]

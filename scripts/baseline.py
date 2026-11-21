@@ -1,38 +1,38 @@
+import json
+from dataclasses import asdict
+from pathlib import Path
+
+import numpy as np
+import pybullet as p
 from neat_walking_robot.environments import create_environment
 from neat_walking_robot.robot import Robot
 from neat_walking_robot.simulation import prepare_simulation
 from neat_walking_robot.training import (
     default_training_config,
-    run_episode,
     fitness_v1,
+    run_episode,
+    to_json,
 )
-from dataclasses import asdict
-from enum import Enum
-from pathlib import Path
-import pybullet as p
-import numpy as np
-import json
 
-def to_json(o):
-    if isinstance(o, Enum):
-        return o.name
-    return str(o)
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+CONFIG_PATH = PROJECT_ROOT / "configs" / "a1.ini"
+RESULTS_PATH = PROJECT_ROOT / "results"
 
 def sine_gait_action(t: float, f: float):
     a_thigh = 0.4
     a_calf = 0.3
 
-    FR_RL_thigh = a_thigh * np.sin(2 * np.pi * f * t)
-    FR_RL_calf = a_calf * np.sin(2 * np.pi * f * t + (np.pi / 2))
+    fr_rl_thigh = a_thigh * np.sin(2 * np.pi * f * t)
+    fr_rl_calf = a_calf * np.sin(2 * np.pi * f * t + (np.pi / 2))
 
-    FL_RR_thigh = a_thigh * np.sin(2 * np.pi * f * t + np.pi)
-    FL_RR_calf = a_calf * np.sin(2 * np.pi * f * t + (np.pi / 2) + np.pi)
+    fl_rr_thigh = a_thigh * np.sin(2 * np.pi * f * t + np.pi)
+    fl_rr_calf = a_calf * np.sin(2 * np.pi * f * t + (np.pi / 2) + np.pi)
 
-    return [0.0, FR_RL_thigh, FR_RL_calf, 0.0, FL_RR_thigh, FL_RR_calf, 0.0, FL_RR_thigh, FL_RR_calf, 0.0, FR_RL_thigh,
-            FR_RL_calf]
+    return [0.0, fr_rl_thigh, fr_rl_calf, 0.0, fl_rr_thigh, fl_rr_calf, 0.0, fl_rr_thigh, fl_rr_calf, 0.0, fr_rl_thigh,
+            fr_rl_calf]
 
 def run_baseline():
-    training_config = default_training_config(Path(""), 42)
+    training_config = default_training_config(CONFIG_PATH, 42)
 
     sd = training_config.simulation_data
     et = training_config.env_type
@@ -56,7 +56,9 @@ def run_baseline():
         "fitness" : fitness,
         "velocity" : v,
     }
-    with open("baseline_data.json", 'w', encoding="utf-8") as f:
+    with open(RESULTS_PATH / "baseline_data.json", 'w', encoding="utf-8") as f:
         json.dump(data, f, default=to_json, ensure_ascii=False, indent=2)
 
-run_baseline()
+
+if __name__ == "__main__":
+    run_baseline()

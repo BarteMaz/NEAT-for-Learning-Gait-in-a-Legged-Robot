@@ -17,6 +17,7 @@ class RobotSpec:
     joints_velocity_scale: float
     base_velocity_scale: float
     fall_threshold: float
+    roll_and_pitch_scale: float
 
 A1_ROBOT_SPEC = RobotSpec(
     model_path="a1/a1.urdf",
@@ -41,6 +42,7 @@ A1_ROBOT_SPEC = RobotSpec(
     joints_velocity_scale=10.0,
     base_velocity_scale=5.0,
     fall_threshold=0.8,
+    roll_and_pitch_scale=0.8,
 )
 
 def scale_to_angles(value: float, angular_range: np.ndarray):
@@ -63,6 +65,7 @@ class Robot:
         self.joints_velocity_scale = spec.joints_velocity_scale
         self.base_velocity_scale = spec.base_velocity_scale
         self.fall_threshold = spec.fall_threshold
+        self.roll_and_pitch_scale = spec.roll_and_pitch_scale
 
         # loading
         self.robot_id = p.loadURDF(
@@ -182,7 +185,7 @@ class Robot:
         base_ang_velocity_scaled = [x / self.base_velocity_scale for x in base_ang_velocity]
 
         orientation = p.getEulerFromQuaternion(p.getBasePositionAndOrientation(self.robot_id, physicsClientId=self.client_id)[1])
-        roll_and_pitch_scaled = [x / self.fall_threshold for x in orientation[0:2]]
+        roll_and_pitch_scaled = [x / self.roll_and_pitch_scale for x in orientation[0:2]]
         yaw_scaled = [orientation[2] / (np.pi / 2)]
 
         toes_contacts = self.get_toes_contact_points()

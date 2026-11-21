@@ -1,4 +1,4 @@
-from typing import Callable
+from collections.abc import Callable
 
 import neat
 import numpy as np
@@ -7,10 +7,9 @@ import pybullet as p
 from neat_walking_robot.environments import create_environment
 from neat_walking_robot.robot import Robot
 from neat_walking_robot.simulation import prepare_simulation
+from neat_walking_robot.training.config import TrainingConfig
 from neat_walking_robot.training.episode import EpisodeParams, run_episode
 from neat_walking_robot.training.fitness import FitnessParams, fitness_v1
-
-from neat_walking_robot.training.config import TrainingConfig
 
 _worker = {}
 
@@ -34,3 +33,8 @@ def eval_genome(genome, config):
     metrics = run_episode(_worker["robot"], _worker["env"], policy, dt, episode_params)
 
     return fitness_v1(metrics, fitness_params)
+
+# for series evaluation
+def eval_genomes(genomes, config):
+    for genome_id, genome in genomes:
+        genome.fitness = eval_genome(genome, config)

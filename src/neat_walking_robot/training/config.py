@@ -1,17 +1,18 @@
+import json
+import pickle
+from dataclasses import asdict, dataclass
+from enum import Enum
+from pathlib import Path
+
 from neat_walking_robot.environments import (
     BaseEnvironmentData,
     EnvironmentType,
 )
-from neat_walking_robot.robot import RobotSpec, A1_ROBOT_SPEC
+from neat_walking_robot.robot import A1_ROBOT_SPEC, RobotSpec
 from neat_walking_robot.simulation import SimulationData
 from neat_walking_robot.training.episode import EpisodeParams
 from neat_walking_robot.training.fitness import FitnessParams
 
-from enum import Enum
-from pathlib import Path
-from dataclasses import dataclass, asdict
-import pickle
-import json
 
 @dataclass(frozen=True, kw_only=True)
 class TrainingConfig:
