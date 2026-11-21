@@ -67,8 +67,12 @@ def main(arguments):
 
     # results
     fitness = fitness_v1(metrics, training_config.fitness_params)
+    velocity = metrics.progress / metrics.duration
+
+    print(f"================METRICS================")
     print(metrics)
-    print(f"Winner fitness from file {winner.fitness}\nWinner fitness from run: {fitness}")
+    print(f"=======================================")
+    print(f"Winner's fitness: {fitness}\nWinner's' velocity: {velocity}")
 
 
 if __name__ == "__main__":
