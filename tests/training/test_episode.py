@@ -9,6 +9,7 @@ deterministically. Contract:
 - all PyBullet calls go to the robot's own server.
 """
 
+import dataclasses
 import math
 
 import numpy as np
@@ -91,6 +92,31 @@ def test_fall_is_detected(world):
     policy = teleport_at(robot, 30, lambda pos: pos, orientation=(1.2, 0, 0))
     m = run_episode(robot, env, policy, DT, EPISODE)
     assert m.end_reason == EndReason.FALL
+
+
+def build_with(client_id: int, spec):
+    prepare_simulation(SimulationData(), client_id)
+    env = FlatEnvironment(TRACK, client_id, seed=0)
+    return env, Robot(spec, env.get_starting_pos(), client_id)
+
+
+def test_fall_uses_fall_threshold_not_the_observation_scale(client):
+    """Roll 1.0 rad is past fall_threshold 0.8: the episode ends right after the tilt,
+    even though roll_and_pitch_scale (2.0) is larger than the tilt."""
+    spec = dataclasses.replace(A1_ROBOT_SPEC, fall_threshold=0.8, roll_and_pitch_scale=2.0)
+    env, robot = build_with(client, spec)
+    m = run_episode(robot, env, teleport_at(robot, 30, lambda pos: pos, orientation=(1.0, 0, 0)), DT, EPISODE)
+    assert m.end_reason == EndReason.FALL
+    assert m.duration <= 32 * ACTION_TIME + 1e-9
+
+
+def test_no_fall_when_threshold_is_above_any_angle(client):
+    """|roll| and |pitch| never exceed pi, so with fall_threshold = pi nothing counts as a fall,
+    even with a small roll_and_pitch_scale (0.3) that a mixed-up field would use as threshold."""
+    spec = dataclasses.replace(A1_ROBOT_SPEC, fall_threshold=math.pi, roll_and_pitch_scale=0.3)
+    env, robot = build_with(client, spec)
+    m = run_episode(robot, env, teleport_at(robot, 30, lambda pos: pos, orientation=(1.0, 0, 0)), DT, EPISODE)
+    assert m.end_reason != EndReason.FALL
 
 
 @pytest.mark.parametrize("side", [-1, 1])

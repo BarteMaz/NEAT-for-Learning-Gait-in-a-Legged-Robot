@@ -257,15 +257,21 @@ def test_joint_velocities_are_scaled(robot):
     assert obs[JOINT_VEL][idx] == pytest.approx(2.0 / A1_ROBOT_SPEC.joints_velocity_scale, abs=1e-9)
 
 
-def test_roll_and_pitch_are_scaled_by_fall_threshold(robot):
-    """Roll equal to the fall threshold reads as 1.0."""
+def test_roll_and_pitch_are_scaled_by_roll_and_pitch_scale(client):
+    """Roll equal to roll_and_pitch_scale reads as 1.0.
+
+    The observation scale and the fall threshold are separate fields (2026-11-21), so the
+    spec gives them different values: dividing by fall_threshold would fail here.
+    """
+    spec = dataclasses.replace(A1_ROBOT_SPEC, roll_and_pitch_scale=0.5, fall_threshold=1.2)
+    robot = make_robot(client, spec)
     pos, _ = base_state(robot)
     roll, pitch = 0.4, -0.2
     p.resetBasePositionAndOrientation(robot.robot_id, pos, p.getQuaternionFromEuler([roll, pitch, 0]),
                                       physicsClientId=robot.client_id)
     obs = robot.get_observation()
-    assert obs[ROLL] == pytest.approx(roll / A1_ROBOT_SPEC.fall_threshold, abs=1e-6)
-    assert obs[PITCH] == pytest.approx(pitch / A1_ROBOT_SPEC.fall_threshold, abs=1e-6)
+    assert obs[ROLL] == pytest.approx(roll / 0.5, abs=1e-6)
+    assert obs[PITCH] == pytest.approx(pitch / 0.5, abs=1e-6)
 
 
 def test_yaw_is_scaled_by_half_pi(robot):
