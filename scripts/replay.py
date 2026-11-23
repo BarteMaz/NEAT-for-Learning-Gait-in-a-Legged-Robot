@@ -1,5 +1,4 @@
 import argparse
-import pickle
 import time
 from pathlib import Path
 
@@ -8,12 +7,7 @@ import pybullet as p
 from neat_walking_robot.environments import BaseEnvironment, create_environment
 from neat_walking_robot.robot import Robot
 from neat_walking_robot.simulation import prepare_simulation
-from neat_walking_robot.training import TrainingConfig, make_policy, run_episode, fitness_v1
-
-
-def load_pickle(path: Path):
-    with open(path, "rb") as f:
-        return pickle.load(f)
+from neat_walking_robot.training import make_policy, run_episode, fitness_v1, load_run_config
 
 
 def realtime(policy, delay):
@@ -21,6 +15,7 @@ def realtime(policy, delay):
         time.sleep(delay)
         return policy(obs, t)
     return wrapped
+
 
 def change_walls_opacity(env: BaseEnvironment, opacity: float, client_id: int) -> None:
     walls_id = [env.wall_back, env.wall_left, env.wall_right, env.wall_front]
@@ -33,21 +28,13 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 def main(arguments):
     # read run's training configuration and best genome
     run_dir = PROJECT_ROOT / "results" / arguments.run_name
-    training_config: TrainingConfig = load_pickle(run_dir / "training_config.pkl")
-    winner = load_pickle(run_dir / "winner.pkl")
-    dt = training_config.simulation_data.dt
+    training_config, winner, neat_config = load_run_config(run_dir)
 
     # create ANN from best genome
-    neat_config = neat.Config(
-        neat.DefaultGenome,
-        neat.DefaultReproduction,
-        neat.DefaultSpeciesSet,
-        neat.DefaultStagnation,
-        run_dir / Path(training_config.neat_config_path).name
-    )
     net = neat.nn.FeedForwardNetwork.create(winner, neat_config)
 
     # create policy that runs realtime
+    dt = training_config.simulation_data.dt
     policy = make_policy(net, training_config.episode_params)
     realtime_policy = realtime(policy, dt * training_config.episode_params.k)
 
@@ -59,7 +46,7 @@ def main(arguments):
 
     # visual adjustments
     change_walls_opacity(env, 0.1, client)
-    p.resetDebugVisualizerCamera(5.5, 0, -89.9, [0, 0, 0])
+    p.resetDebugVisualizerCamera(5.5, 0, -89.9, [0, 0, 0], physicsClientId=client)
 
     # run episode
     metrics = run_episode(robot, env, realtime_policy, dt, training_config.episode_params)

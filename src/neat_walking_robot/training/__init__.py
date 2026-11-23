@@ -1,6 +1,7 @@
 from neat_walking_robot.training.config import (
     TrainingConfig,
     default_training_config,
+    load_run_config,
     save_training_config_to_json,
     save_training_config_to_pickle,
     to_json,
@@ -30,6 +31,7 @@ __all__ = [
     "eval_genomes",
     "fitness_v1",
     "init_worker",
+    "load_run_config",
     "make_policy",
     "run_episode",
     "save_training_config_to_json",

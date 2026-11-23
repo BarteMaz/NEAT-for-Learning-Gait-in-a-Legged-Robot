@@ -1,5 +1,6 @@
 import json
 import pickle
+import neat
 from dataclasses import asdict, dataclass
 from enum import Enum
 from pathlib import Path
@@ -87,5 +88,24 @@ def save_training_config_to_json(training_config: TrainingConfig, path: Path):
     }
     with open(file_path, 'w', encoding="utf-8") as f:
         json.dump(data, f, default=to_json, ensure_ascii=False, indent=2)
+
+
+def load_pickle(path: Path):
+    with open(path, "rb") as f:
+        return pickle.load(f)
+
+
+def load_run_config(run_dir: Path):
+    training_config: TrainingConfig = load_pickle(run_dir / "training_config.pkl")
+    winner = load_pickle(run_dir / "winner.pkl")
+    neat_config = neat.Config(
+        neat.DefaultGenome,
+        neat.DefaultReproduction,
+        neat.DefaultSpeciesSet,
+        neat.DefaultStagnation,
+        run_dir / Path(training_config.neat_config_path).name
+    )
+    return training_config, winner, neat_config
+
 
 

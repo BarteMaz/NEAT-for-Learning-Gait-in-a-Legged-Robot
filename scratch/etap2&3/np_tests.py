@@ -5,4 +5,6 @@ now = datetime.now()
 
 
 
-print(np.rad2deg(0.8))
+bl = [True, False, False, False]
+
+print()

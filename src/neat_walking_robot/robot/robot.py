@@ -18,6 +18,8 @@ class RobotSpec:
     base_velocity_scale: float
     fall_threshold: float
     roll_and_pitch_scale: float
+    apply_velocity_limit: bool = False
+    position_gain: float = 0.1
 
 A1_ROBOT_SPEC = RobotSpec(
     model_path="a1/a1.urdf",
@@ -66,6 +68,8 @@ class Robot:
         self.base_velocity_scale = spec.base_velocity_scale
         self.fall_threshold = spec.fall_threshold
         self.roll_and_pitch_scale = spec.roll_and_pitch_scale
+        self.apply_velocity_limit = spec.apply_velocity_limit
+        self.position_gain = spec.position_gain
 
         # loading
         self.robot_id = p.loadURDF(
@@ -77,6 +81,7 @@ class Robot:
         self.reset_base_position = p.getBasePositionAndOrientation(self.robot_id, physicsClientId=self.client_id)[0]
         self.moving_joints_limits = {}
         self.moving_joints_efforts = {}
+        self.moving_joints_velocity = {}
         self.moving_joints_id = {}
         self.toes_links_id = {}
 
@@ -103,6 +108,7 @@ class Robot:
 
                 self.moving_joints_limits[joint_info.joint_name] = new_range
                 self.moving_joints_efforts[joint_info.joint_name] = joint_info.effort
+                self.moving_joints_velocity[joint_info.joint_name] = joint_info.velocity
                 self.moving_joints_id[joint_info.joint_name] = joint_info.joint_index
 
         self.moving_joints = tuple(self.moving_joints_id.keys())
@@ -132,6 +138,7 @@ class Robot:
                 force=self.moving_joints_efforts[joint_name],
                 controlMode=p.POSITION_CONTROL,
                 targetPosition=self.rest_position[joint_name],
+                positionGain=self.position_gain,
                 physicsClientId=self.client_id
             )
 
@@ -144,24 +151,41 @@ class Robot:
         self.start_base_orientation = base_info[1]
 
     def apply_action(self, values: list[float]) -> None:
+
         joints_id = []
         joints_target_angles = []
         joints_forces = []
+        joints_velocities = []
 
         for i, joint_name in enumerate(self.moving_joints):
             joint_range = self.moving_joints_limits[joint_name]
             joints_id.append(self.moving_joints_id[joint_name])
             joints_target_angles.append(scale_to_angles(values[i], joint_range))
             joints_forces.append(self.moving_joints_efforts[joint_name])
+            joints_velocities.append(self.moving_joints_velocity[joint_name])
 
-        p.setJointMotorControlArray(
-            bodyUniqueId=self.robot_id,
-            jointIndices=joints_id,
-            controlMode=p.POSITION_CONTROL,
-            targetPositions=joints_target_angles,
-            forces=joints_forces,
-            physicsClientId=self.client_id
-        )
+        if not self.apply_velocity_limit:
+            p.setJointMotorControlArray(
+                bodyUniqueId=self.robot_id,
+                jointIndices=joints_id,
+                controlMode=p.POSITION_CONTROL,
+                targetPositions=joints_target_angles,
+                forces=joints_forces,
+                positionGains=[self.position_gain for _ in range(len(self.moving_joints))],
+                physicsClientId=self.client_id
+            )
+        else:
+            for i in range(len(self.moving_joints)):
+                p.setJointMotorControl2(
+                    bodyUniqueId=self.robot_id,
+                    jointIndex=joints_id[i],
+                    controlMode=p.POSITION_CONTROL,
+                    targetPosition=joints_target_angles[i],
+                    force=joints_forces[i],
+                    positionGain=self.position_gain,
+                    maxVelocity=joints_velocities[i],
+                    physicsClientId=self.client_id
+                )
 
     def get_toes_contact_points(self):
         toes_contact_points = {}

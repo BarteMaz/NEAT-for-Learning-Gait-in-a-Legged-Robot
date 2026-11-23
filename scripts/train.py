@@ -3,6 +3,7 @@ import importlib.metadata
 import json
 import pickle
 import shutil
+import subprocess
 from datetime import datetime
 from pathlib import Path
 from time import perf_counter
@@ -21,7 +22,27 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 CONFIG_PATH = PROJECT_ROOT / "configs" / "a1.ini"
 RESULTS_PATH = PROJECT_ROOT / "results"
 
+
+def git_info(repo_root: Path) -> dict:
+    def run_git(*args: str) -> str:
+        return subprocess.check_output(
+            ["git", *args],
+            cwd=repo_root,
+            text=True,
+            stderr=subprocess.DEVNULL,
+        ).strip()
+
+    try:
+        commit = run_git("rev-parse", "HEAD")
+        dirty = run_git("status", "--porcelain") != ""
+    except (FileNotFoundError, subprocess.CalledProcessError):
+        return {"commit": None, "dirty": None}
+    return {"commit": commit, "dirty": dirty}
+
+
 def main(arguments):
+    # last git commit
+    last_commit_hash = git_info(PROJECT_ROOT)
 
     # training's folder
     now = datetime.now()
@@ -80,7 +101,8 @@ def main(arguments):
         "num_workers": arguments.workers,
         "pop_size": neat_config.pop_size,
         "runtime": run_end_time - run_start_time,
-        "neat-python_version" : importlib.metadata.version("neat-python")
+        "neat-python_version" : importlib.metadata.version("neat-python"),
+        "last_commit_hash" : last_commit_hash
     }
 
     # statistics
