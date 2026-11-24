@@ -7,7 +7,7 @@ import neat
 import numpy as np
 import pandas as pd
 import pybullet as p
-import time
+
 
 from neat_walking_robot.environments import create_environment
 from neat_walking_robot.robot import Robot, get_joint_info
@@ -92,34 +92,47 @@ def main(arguments):
     run_dir = PROJECT_ROOT / "results" / arguments.run_name
     training_config, winner, neat_config = load_run_config(run_dir)
 
-    if arguments.fine_dt:
-        simulation_data = replace(training_config.simulation_data, dt=1/480)
-        episode_params =  replace(training_config.episode_params, k=8)
-    else:
-        simulation_data = training_config.simulation_data
-        episode_params = training_config.episode_params
-    dt = simulation_data.dt
-    fs = 1.0 / (episode_params.k * dt)
-
+    simulation_data = training_config.simulation_data
+    episode_params = training_config.episode_params
+    robot_spec = training_config.robot_spec
     log: list = []
+    tag_data = {
+        "baseline": False,
+        "winner": True,
+        "_fine_dt" : False,
+        "_vl" : False,
+        "_pg" : False,
+        "_alpha" : False,
+    }
+
+
+    if arguments.fine_dt:
+        tag_data["_fine_dt"] = True
+        simulation_data = replace(simulation_data, dt=1/480)
+        episode_params =  replace(episode_params, k=8)
+
     if arguments.baseline:
-        tag = "baseline"
+        tag_data["baseline"] = True
         policy = recording(lambda obs, t: sine_gait_action(t, 3.0), log)
     else:
-        tag = "winner"
+        tag_data["winner"] = False
         net = neat.nn.FeedForwardNetwork.create(winner, neat_config)
         policy = recording(make_policy(net, episode_params), log)
 
     if arguments.velocity_limit:
-        robot_spec = replace(training_config.robot_spec, apply_velocity_limit=True)
-    else:
-        robot_spec = training_config.robot_spec
+        tag_data["_vl"] = True
+        robot_spec = replace(robot_spec, apply_velocity_limit=True)
 
-    if arguments.fine_dt:
-        tag += "_fine_dt"
+    if arguments.position_gain:
+        tag_data["_pg"] = True
+        robot_spec = replace(robot_spec, position_gain=0.05)
 
-    robot_spec = replace(robot_spec, position_gain=0.05)
+    if arguments.filter_alpha:
+        tag_data["_alpha"] = True
+        robot_spec = replace(robot_spec, action_filter_alpha=0.3)
 
+    dt = simulation_data.dt
+    fs = 1.0 / (episode_params.k * dt)
 
     client = p.connect(p.DIRECT)
     try:
@@ -153,8 +166,14 @@ def main(arguments):
         index=pd.Index(toe_names, name="toe"),
     )
 
-    joints_path = OUTPUT_DIR / f"joints_{tag}_pg.csv"
-    contacts_path = OUTPUT_DIR / f"contacts_{tag}_pg.csv"
+
+    tag = ""
+    for k, v in tag_data.items():
+        if v:
+            tag += k
+
+    joints_path = OUTPUT_DIR / f"joints_{tag}.csv"
+    contacts_path = OUTPUT_DIR / f"contacts_{tag}.csv"
     joints_df.to_csv(joints_path)
     contacts_df.to_csv(contacts_path)
 
@@ -164,4 +183,6 @@ if __name__ == "__main__":
     parser.add_argument("--baseline", action="store_true")
     parser.add_argument("--velocity_limit", action="store_true")
     parser.add_argument("--fine_dt", action="store_true")
+    parser.add_argument("--position_gain", action="store_true")
+    parser.add_argument("--filter_alpha", action="store_true")
     main(parser.parse_args())

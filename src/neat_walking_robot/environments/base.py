@@ -119,6 +119,12 @@ class BaseEnvironment(ABC, Generic[ParamsT]):
             physicsClientId=self.client
         )
 
+    def set_walls_visual(self, color: list[float]) -> None:
+        p.changeVisualShape(self.wall_left, -1, rgbaColor=color, physicsClientId=self.client)
+        p.changeVisualShape(self.wall_right, -1, rgbaColor=color, physicsClientId=self.client)
+        p.changeVisualShape(self.wall_front, -1, rgbaColor=color, physicsClientId=self.client)
+        p.changeVisualShape(self.wall_back, -1, rgbaColor=color, physicsClientId=self.client)
+
     def get_starting_pos(self):
         return [-(self.params.track_length / 2 - self.params.start_distance), 0.0,
                 self.get_ground_level(-(self.params.track_length / 2 - self.params.start_distance), 0.0)]

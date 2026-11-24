@@ -2,6 +2,7 @@ from dataclasses import dataclass
 
 import numpy as np
 import pybullet as p
+from scipy.constants import value
 
 from neat_walking_robot.robot.joints import JointType, get_joints_info
 
@@ -20,6 +21,11 @@ class RobotSpec:
     roll_and_pitch_scale: float
     apply_velocity_limit: bool = False
     position_gain: float = 0.1
+    action_filter_alpha: float = 1.0
+    def __post_init__(self):
+        if not (0 < self.action_filter_alpha <= 1.0):
+            raise ValueError(f'action_filter_alpha must be in (0, 1]')
+
 
 A1_ROBOT_SPEC = RobotSpec(
     model_path="a1/a1.urdf",
@@ -70,6 +76,7 @@ class Robot:
         self.roll_and_pitch_scale = spec.roll_and_pitch_scale
         self.apply_velocity_limit = spec.apply_velocity_limit
         self.position_gain = spec.position_gain
+        self.action_filter_alpha = spec.action_filter_alpha
 
         # loading
         self.robot_id = p.loadURDF(
@@ -113,8 +120,10 @@ class Robot:
 
         self.moving_joints = tuple(self.moving_joints_id.keys())
 
+        # initialize by reset()
         self.start_base_position = None
         self.start_base_orientation = None
+        self.filter_state = None
         self.reset()
 
 
@@ -149,8 +158,19 @@ class Robot:
         base_info = p.getBasePositionAndOrientation(self.robot_id, physicsClientId=self.client_id)
         self.start_base_position = base_info[0]
         self.start_base_orientation = base_info[1]
+        self.filter_state = np.zeros(len(self.moving_joints))
+
+    def ema_filter(self, values: list[float]) -> list[float]:
+        for i, prev in enumerate(self.filter_state):
+            values[i] = prev + self.action_filter_alpha * (values[i] - prev)
+
+        self.filter_state = values
+        return values
+
 
     def apply_action(self, values: list[float]) -> None:
+        # filter action
+        values = self.ema_filter(values)
 
         joints_id = []
         joints_target_angles = []

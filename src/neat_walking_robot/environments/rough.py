@@ -2,6 +2,7 @@ from dataclasses import dataclass
 
 import numpy as np
 import pybullet as p
+import pybullet_data
 
 from neat_walking_robot.environments.base import BaseEnvironment, BaseEnvironmentData
 
@@ -122,7 +123,9 @@ class RoughEnvironment(BaseEnvironment[RoughEnvironmentData]):
         p.changeDynamics(ground, -1, lateralFriction=self.params.friction, physicsClientId=self.client)
         z_offset = (height_data.min() + height_data.max()) / 2
         p.resetBasePositionAndOrientation(ground, [0, 0, z_offset], [0, 0, 0, 1], physicsClientId=self.client)
-        p.changeVisualShape(ground, -1, rgbaColor=[0.6, 0.7, 0.6, 1], physicsClientId=self.client)
+        texture_id = p.loadTexture("checker_blue.png", physicsClientId=self.client)
+        p.changeVisualShape(ground, -1, textureUniqueId=texture_id, rgbaColor=[1.0, 1.0, 1.0, 1.0],
+                            physicsClientId=self.client)
         return ground
 
     def get_ground_level(self, x: float, y: float) -> float:
