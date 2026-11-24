@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 import numpy as np
 import pybullet as p
-from scipy.constants import value
+
 
 from neat_walking_robot.robot.joints import JointType, get_joints_info
 
@@ -24,7 +24,7 @@ class RobotSpec:
     action_filter_alpha: float = 1.0
     def __post_init__(self):
         if not (0 < self.action_filter_alpha <= 1.0):
-            raise ValueError(f'action_filter_alpha must be in (0, 1]')
+            raise ValueError("action_filter_alpha must be in (0, 1]")
 
 
 A1_ROBOT_SPEC = RobotSpec(
@@ -161,16 +161,18 @@ class Robot:
         self.filter_state = np.zeros(len(self.moving_joints))
 
     def ema_filter(self, values: list[float]) -> list[float]:
+        filtered_values = []
         for i, prev in enumerate(self.filter_state):
-            values[i] = prev + self.action_filter_alpha * (values[i] - prev)
+            val = np.clip(values[i], -1.0, 1.0)
+            filtered_values.append(self.action_filter_alpha * val + (1 - self.action_filter_alpha) * prev)
 
-        self.filter_state = values
-        return values
+        self.filter_state = filtered_values
+        return filtered_values
 
 
     def apply_action(self, values: list[float]) -> None:
         # filter action
-        values = self.ema_filter(values)
+        filtered_values = self.ema_filter(values)
 
         joints_id = []
         joints_target_angles = []
@@ -180,7 +182,7 @@ class Robot:
         for i, joint_name in enumerate(self.moving_joints):
             joint_range = self.moving_joints_limits[joint_name]
             joints_id.append(self.moving_joints_id[joint_name])
-            joints_target_angles.append(scale_to_angles(values[i], joint_range))
+            joints_target_angles.append(scale_to_angles(filtered_values[i], joint_range))
             joints_forces.append(self.moving_joints_efforts[joint_name])
             joints_velocities.append(self.moving_joints_velocity[joint_name])
 

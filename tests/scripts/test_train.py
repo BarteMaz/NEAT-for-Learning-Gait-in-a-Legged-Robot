@@ -72,7 +72,9 @@ def train(tmp_path, monkeypatch):
     def short_config(neat_config_path, seed):
         config = original(neat_config_path, seed)
         episode = replace(config.episode_params, episode_time=SHORT_EPISODE)
-        return replace(config, episode_params=episode)
+        # a short episode raises D / T, and TrainingConfig requires target_speed > D / T (2026-11-24)
+        fitness = replace(config.fitness_params, target_speed=10.0)
+        return replace(config, episode_params=episode, fitness_params=fitness)
 
     monkeypatch.setattr(module, "default_training_config", short_config)
 

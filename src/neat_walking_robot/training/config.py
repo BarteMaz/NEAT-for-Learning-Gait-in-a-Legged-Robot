@@ -26,6 +26,13 @@ class TrainingConfig:
     neat_config_path: Path
     seed: int
 
+    def __post_init__(self):
+        target_distance = self.env_data.track_length - self.env_data.end_distance - self.env_data.start_distance
+        episode_time = self.episode_params.episode_time
+        if self.fitness_params.target_speed <= target_distance / episode_time:
+            raise ValueError(
+                f"Target speed ({self.fitness_params.target_speed}) in fitness_params is must be grater than minimal speed ({target_distance / episode_time}) needed for episode completion")
+
 
 def default_training_config(neat_config_path: Path, seed: int) -> TrainingConfig:
     simulation_data = SimulationData()
@@ -49,6 +56,8 @@ def default_training_config(neat_config_path: Path, seed: int) -> TrainingConfig
     fit_params = FitnessParams(
         goal_bonus=2.0,
         penalty=1.0,
+        target_speed=1.0,
+        mean_action_change_threshold=0.2
     )
     return TrainingConfig(
         simulation_data=simulation_data,
@@ -106,6 +115,3 @@ def load_run_config(run_dir: Path):
         run_dir / Path(training_config.neat_config_path).name
     )
     return training_config, winner, neat_config
-
-
-

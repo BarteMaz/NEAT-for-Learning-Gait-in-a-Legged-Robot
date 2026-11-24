@@ -38,6 +38,7 @@ class EpisodeMetrics:
     duration: float
     max_y: float
     max_yaw: float
+    mean_action_change: float
 
 
 def run_episode(robot: Robot, env: BaseEnvironment, policy, dt: float, params: EpisodeParams) -> EpisodeMetrics:
@@ -52,8 +53,11 @@ def run_episode(robot: Robot, env: BaseEnvironment, policy, dt: float, params: E
     episode_duration = 0.0
     reason = None
 
+
     robot.reset()
     x_0 = robot.start_base_position[0]
+    prev_action = np.zeros(len(robot.moving_joints))
+    mean_action_change = 0.0
 
     for n in range(action_number):
         t = n * params.k * dt
@@ -61,6 +65,12 @@ def run_episode(robot: Robot, env: BaseEnvironment, policy, dt: float, params: E
         action = policy(observation, t)
         robot.apply_action(action)
 
+        # calculate mean action change
+        current_mean_action_change = np.mean(np.abs(np.diff([prev_action, action], axis=0)))
+        mean_action_change = (mean_action_change * n + current_mean_action_change) / (n + 1)
+        prev_action = action
+
+        # step simulation
         for _ in range(params.k):
             p.stepSimulation(physicsClientId=client_id)
 
@@ -110,7 +120,8 @@ def run_episode(robot: Robot, env: BaseEnvironment, policy, dt: float, params: E
         episode_length=params.episode_time,
         duration=episode_duration,
         max_y=max_y,
-        max_yaw=max_yaw
+        max_yaw=max_yaw,
+        mean_action_change=mean_action_change,
     )
 
     return measurements

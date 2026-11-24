@@ -1,5 +1,6 @@
 from neat_walking_robot.simulation import SimulationData, prepare_simulation
 from neat_walking_robot.environments import (
+    BaseEnvironment,
     BaseEnvironmentData,
     RoughEnvironmentData,
     SlopeEnvironmentData,
@@ -76,6 +77,10 @@ def apply_camera(preset, client):
 def was_pressed(events, key):
     return bool(events.get(key, 0) & p.KEY_WAS_TRIGGERED)
 
+def change_walls_opacity(env: BaseEnvironment, opacity: float, client_id: int) -> None:
+    walls_id = [env.wall_back, env.wall_left, env.wall_right, env.wall_front]
+    for wall in walls_id:
+        p.changeVisualShape(wall, -1, rgbaColor=[0.0, 1.0, 0.0, opacity], physicsClientId=client_id)
 
 def main(args):
     client = p.connect(p.GUI)
@@ -84,12 +89,14 @@ def main(args):
 
     if args.rough_env:
         env = create_environment(EnvironmentType.ROUGH, ROUGH_ENV_DATA, client, args.seed)
+        texture_id = p.loadTexture("checker_blue.png", physicsClientId=client)
+        p.changeVisualShape(env.ground, -1, textureUniqueId=texture_id, rgbaColor=[1.0, 1.0, 1.0, 1.0], physicsClientId=client)
     elif args.slope_env:
         env = create_environment(EnvironmentType.SLOPE, SLOPE_ENV_DATA, client, args.seed)
     else:
         env = create_environment(EnvironmentType.FLAT, FLAT_ENV_DATA, client, args.seed)
 
-    env.set_walls_visual([0.0, 1.0, 0.0, 0.1])
+    change_walls_opacity(env, 0.1, client)
 
     camera_index = 0
     apply_camera(CAMERA_PRESETS[camera_index], client)

@@ -9,12 +9,17 @@ from neat_walking_robot.training.episode import EndReason, EpisodeMetrics
 class FitnessParams:
     goal_bonus: float
     penalty: float
+    target_speed: float
+    mean_action_change_threshold: float
     def __post_init__(self):
         if self.goal_bonus < 0:
             raise ValueError("Goal bonus must be greater or equal 0")
         if self.penalty < 0:
             raise ValueError("Penalty must be greater or equal 0")
-
+        if self.target_speed <= 0:
+            raise ValueError("Target speed must be greater than 0")
+        if self.mean_action_change_threshold <= 0:
+            raise ValueError("Mean action change threshold must be greater than 0")
 
 def fitness_v1(metrics: EpisodeMetrics, fitness_params: FitnessParams) -> float:
     gain = np.clip(metrics.progress, 0.0, metrics.goal_distance)
@@ -25,3 +30,22 @@ def fitness_v1(metrics: EpisodeMetrics, fitness_params: FitnessParams) -> float:
         bonus = fitness_params.goal_bonus * (metrics.episode_length - metrics.duration) / metrics.episode_length
 
     return gain + bonus
+
+def fitness_v2(metrics, fitness_params) -> float:
+    gain = np.clip(metrics.progress, 0.0, metrics.goal_distance)
+    target_velocity = fitness_params.target_speed
+    min_velocity = metrics.goal_distance / metrics.episode_length
+    velocity = gain / metrics.duration
+
+    mean_0 = fitness_params.mean_action_change_threshold
+    mean = metrics.mean_action_change
+    smoothness_multiplier = 1.0 if mean <= mean_0 else mean_0 / mean
+
+    bonus = 0.0
+    penalty = 0.0
+    if metrics.end_reason in [EndReason.FALL, EndReason.WALL]:
+        penalty = fitness_params.penalty
+    elif metrics.end_reason == EndReason.GOAL:
+        bonus = fitness_params.goal_bonus * np.clip((velocity - min_velocity) / (target_velocity - min_velocity), 0, 1)
+
+    return (gain + bonus) * smoothness_multiplier - penalty
