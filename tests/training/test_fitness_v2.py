@@ -14,7 +14,7 @@ Contract:
 import pytest
 
 from neat_walking_robot.training.episode import EndReason, EpisodeMetrics
-from neat_walking_robot.training.fitness import FitnessParams, fitness_v2
+from neat_walking_robot.training.fitness import FITNESS, FitnessFunction, FitnessParams, fitness_v1, fitness_v2
 
 T = 10.0
 D = 4.0
@@ -129,3 +129,15 @@ def test_baseline_beats_the_vibrating_winner_of_the_first_run():
     assert baseline == pytest.approx(4.462, abs=1e-3)
     assert winner == pytest.approx(1.026, abs=1e-3)
     assert baseline > winner
+
+
+# --- registry (2026-11-25) ------------------------------------------------------------
+
+def test_every_fitness_function_has_an_implementation():
+    """A new FitnessFunction member without a FITNESS entry would only fail inside a worker process."""
+    assert set(FITNESS) == set(FitnessFunction)
+
+
+def test_registry_maps_names_to_the_right_functions():
+    assert FITNESS[FitnessFunction.V1] is fitness_v1
+    assert FITNESS[FitnessFunction.V2] is fitness_v2

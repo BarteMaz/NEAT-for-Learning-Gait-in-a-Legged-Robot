@@ -7,7 +7,7 @@ import pybullet as p
 from neat_walking_robot.environments import BaseEnvironment, create_environment
 from neat_walking_robot.robot import Robot
 from neat_walking_robot.simulation import prepare_simulation
-from neat_walking_robot.training import make_policy, run_episode, fitness_v1, load_run_config
+from neat_walking_robot.training import make_policy, run_episode, FITNESS, load_run_config
 
 
 def realtime(policy, delay):
@@ -53,7 +53,7 @@ def main(arguments):
     p.disconnect(physicsClientId=client)
 
     # results
-    fitness = fitness_v1(metrics, training_config.fitness_params)
+    fitness = FITNESS[training_config.fitness_function](metrics, training_config.fitness_params)
     velocity = metrics.progress / metrics.duration
 
     print(f"================METRICS================")

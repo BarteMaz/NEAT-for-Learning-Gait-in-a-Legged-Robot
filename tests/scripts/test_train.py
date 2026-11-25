@@ -29,6 +29,8 @@ import neat
 import pybullet as p
 import pytest
 
+from neat_walking_robot.training.fitness import FitnessFunction
+
 from neat_walking_robot.training import evaluation
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -88,12 +90,14 @@ def train(tmp_path, monkeypatch):
     evaluation._worker.clear()
 
 
-def run(train, *, name="t", seed=3, generations=2, workers=0, pop_size=POP_SIZE) -> Path:
-    """Runs main() and returns the new run directory."""
+def run(train, *, name="t", seed=3, generations=2, workers=0, pop_size=POP_SIZE,
+        fitness="v1", filter_alpha=1.0) -> Path:
+    """Runs main() and returns the new run directory. Defaults match train.py's argparse defaults."""
     results = train.RESULTS_PATH
     before = set(results.iterdir()) if results.exists() else set()
     args = argparse.Namespace(
-        name=name, seed=seed, generations=generations, workers=workers, pop_size=pop_size
+        name=name, seed=seed, generations=generations, workers=workers, pop_size=pop_size,
+        fitness=fitness, filter_alpha=filter_alpha,
     )
     train.main(args)
     if "client" in evaluation._worker:
@@ -162,6 +166,33 @@ def test_run_data_records_the_arguments(train):
     assert data["neat-python_version"]
 
 
+def test_default_arguments_keep_fitness_v1_and_no_filter(train):
+    """Without --fitness and --filter_alpha a run is configured exactly like the first major run."""
+    config = load_pickle(run(train) / "training_config.pkl")
+    assert config.fitness_function == FitnessFunction.V1
+    assert config.robot_spec.action_filter_alpha == 1.0
+
+
+def test_fitness_and_filter_arguments_reach_the_saved_config(train):
+    """The run directory must say how the run was made: in the pickle and in the readable JSON."""
+    run_dir = run(train, fitness="v2", filter_alpha=0.5)
+    config = load_pickle(run_dir / "training_config.pkl")
+    assert config.fitness_function == FitnessFunction.V2
+    assert config.robot_spec.action_filter_alpha == 0.5
+
+    saved = json.loads((run_dir / "training_config.json").read_text(encoding="utf-8"))
+    assert saved["robot_specification"]["action_filter_alpha"] == 0.5
+    assert saved["fitness_function"] == "V2"
+
+
+@pytest.mark.parametrize("changed", [{"fitness": "v2"}, {"filter_alpha": 0.5}], ids=["fitness", "filter"])
+def test_fitness_and_filter_arguments_change_the_scores(train, changed):
+    """Each argument must have a visible effect: same seed, different best-fitness history."""
+    reference = run(train, name="ref", seed=13)
+    other = run(train, name="other", seed=13, **changed)
+    assert read_rows(reference / "fitness_history.csv") != read_rows(other / "fitness_history.csv")
+
+
 # ---------------------------------------------------------------- statistics and genomes
 
 
@@ -190,9 +221,11 @@ def test_winner_is_the_best_genome_of_the_run(train):
     assert winner.fitness == pytest.approx(max(best_column), rel=0, abs=1e-12)
 
 
-def test_saved_winner_reevaluates_to_its_saved_fitness(train):
-    """Everything replay.py needs is in the run directory, and the result is bit-identical."""
-    run_dir = run(train, generations=2)
+@pytest.mark.parametrize("fitness, filter_alpha", [("v1", 1.0), ("v2", 0.5)])
+def test_saved_winner_reevaluates_to_its_saved_fitness(train, fitness, filter_alpha):
+    """Everything replay.py needs is in the run directory, and the result is bit-identical,
+    also when the run used fitness_v2 and the action filter (both must come from the saved config)."""
+    run_dir = run(train, generations=2, fitness=fitness, filter_alpha=filter_alpha)
     winner = load_pickle(run_dir / "winner.pkl")
     config = load_pickle(run_dir / "training_config.pkl")
     neat_config = neat.Config(

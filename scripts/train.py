@@ -5,11 +5,13 @@ import pickle
 import shutil
 import subprocess
 from datetime import datetime
+from dataclasses import replace
 from pathlib import Path
 from time import perf_counter
 
 import neat
 from neat_walking_robot.training import (
+    FitnessFunction,
     default_training_config,
     eval_genome,
     eval_genomes,
@@ -17,6 +19,7 @@ from neat_walking_robot.training import (
     save_training_config_to_json,
     save_training_config_to_pickle,
 )
+
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 CONFIG_PATH = PROJECT_ROOT / "configs" / "a1.ini"
@@ -51,9 +54,15 @@ def main(arguments):
     results_path = RESULTS_PATH / f"{arguments.name}_{arguments.seed}_{date}"
     results_path.mkdir(parents=True, exist_ok=False)
 
-    # read and save config
+    # read config
     shutil.copy2(CONFIG_PATH, results_path)
     training_config = default_training_config(results_path / CONFIG_PATH.name, arguments.seed)
+
+    # adjust config based on arguments
+    training_config = replace(training_config, fitness_function=FitnessFunction(arguments.fitness))
+    if arguments.filter_alpha != 1.0:
+        training_config = replace(training_config, robot_spec=replace(training_config.robot_spec, action_filter_alpha=arguments.filter_alpha))
+
     save_training_config_to_pickle(training_config, results_path)
     save_training_config_to_json(training_config, results_path)
 
@@ -128,9 +137,11 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--seed", type=int, default=1)
     parser.add_argument("--generations", type=int, default=100)
-    parser.add_argument("--pop-size", type=int, default=None)
+    parser.add_argument("--pop_size", type=int, default=None)
     parser.add_argument("--workers", type=int, default=0)
     parser.add_argument("--name", type=str, default="a1_train")
+    parser.add_argument("--fitness", type=str, choices=[f.value for f in FitnessFunction], default="v1")
+    parser.add_argument("--filter_alpha", type=float, default=1.0)
     args = parser.parse_args()
 
     main(args)

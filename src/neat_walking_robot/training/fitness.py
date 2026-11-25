@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from enum import Enum
 
 import numpy as np
 
@@ -49,3 +50,14 @@ def fitness_v2(metrics, fitness_params) -> float:
         bonus = fitness_params.goal_bonus * np.clip((velocity - min_velocity) / (target_velocity - min_velocity), 0, 1)
 
     return (gain + bonus) * smoothness_multiplier - penalty
+
+
+class FitnessFunction(Enum):
+    V1 = "v1"
+    V2 = "v2"
+
+FITNESS = {
+    FitnessFunction.V1: fitness_v1,
+    FitnessFunction.V2: fitness_v2,
+}
+

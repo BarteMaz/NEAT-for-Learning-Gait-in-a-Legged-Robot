@@ -17,7 +17,10 @@ import numpy as np
 import pytest
 
 from neat_walking_robot.robot import A1_ROBOT_SPEC, Robot
-from neat_walking_robot.training.config import default_training_config
+import pickle
+
+from neat_walking_robot.training.config import TrainingConfig, default_training_config
+from neat_walking_robot.training.fitness import FitnessFunction
 from neat_walking_robot.training.episode import EndReason, run_episode
 from test_episode import DT, EPISODE, build
 
@@ -158,3 +161,19 @@ def test_target_speed_not_above_the_minimal_goal_speed_is_rejected(value):
 
 def test_target_speed_just_above_the_minimal_goal_speed_is_accepted():
     assert with_target_speed(V_MIN + 1e-6).fitness_params.target_speed > V_MIN
+
+
+def test_default_config_uses_fitness_v1():
+    assert CONFIG.fitness_function == FitnessFunction.V1
+
+
+def test_config_pickled_before_fitness_function_existed_reads_as_v1():
+    """The first major run was scored with v1; replaying it must not switch to v2."""
+    old_state = dict(CONFIG.__dict__)
+    del old_state["fitness_function"]
+    old = TrainingConfig.__new__(TrainingConfig)
+    object.__setattr__(old, "__dict__", old_state)
+
+    restored = pickle.loads(pickle.dumps(old))
+    assert "fitness_function" not in restored.__dict__
+    assert restored.fitness_function == FitnessFunction.V1

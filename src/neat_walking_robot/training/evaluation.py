@@ -9,7 +9,7 @@ from neat_walking_robot.robot import Robot
 from neat_walking_robot.simulation import prepare_simulation
 from neat_walking_robot.training.config import TrainingConfig
 from neat_walking_robot.training.episode import EpisodeParams, run_episode
-from neat_walking_robot.training.fitness import FitnessParams, fitness_v1
+from neat_walking_robot.training.fitness import FitnessParams, FITNESS
 
 _worker = {}
 
@@ -32,7 +32,7 @@ def eval_genome(genome, config):
     policy = make_policy(net, episode_params)
     metrics = run_episode(_worker["robot"], _worker["env"], policy, dt, episode_params)
 
-    return fitness_v1(metrics, fitness_params)
+    return FITNESS[_worker["config"].fitness_function](metrics, fitness_params)
 
 # for series evaluation
 def eval_genomes(genomes, config):

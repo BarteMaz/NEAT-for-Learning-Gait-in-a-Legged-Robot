@@ -113,9 +113,9 @@ def main(arguments):
 
     if arguments.baseline:
         tag_data["baseline"] = True
+        tag_data["winner"] = False
         policy = recording(lambda obs, t: sine_gait_action(t, 3.0), log)
     else:
-        tag_data["winner"] = False
         net = neat.nn.FeedForwardNetwork.create(winner, neat_config)
         policy = recording(make_policy(net, episode_params), log)
 
@@ -127,9 +127,9 @@ def main(arguments):
         tag_data["_pg"] = True
         robot_spec = replace(robot_spec, position_gain=0.05)
 
-    if arguments.filter_alpha:
+    if arguments.filter_alpha != 1.0:
         tag_data["_alpha"] = True
-        robot_spec = replace(robot_spec, action_filter_alpha=0.3)
+        robot_spec = replace(robot_spec, action_filter_alpha=arguments.filter_alpha)
 
     dt = simulation_data.dt
     fs = 1.0 / (episode_params.k * dt)
@@ -184,5 +184,5 @@ if __name__ == "__main__":
     parser.add_argument("--velocity_limit", action="store_true")
     parser.add_argument("--fine_dt", action="store_true")
     parser.add_argument("--position_gain", action="store_true")
-    parser.add_argument("--filter_alpha", action="store_true")
+    parser.add_argument("--filter_alpha", type=float, default=1.0)
     main(parser.parse_args())

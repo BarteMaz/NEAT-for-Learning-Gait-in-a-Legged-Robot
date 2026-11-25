@@ -12,7 +12,7 @@ from neat_walking_robot.environments import (
 from neat_walking_robot.robot import A1_ROBOT_SPEC, RobotSpec
 from neat_walking_robot.simulation import SimulationData
 from neat_walking_robot.training.episode import EpisodeParams
-from neat_walking_robot.training.fitness import FitnessParams
+from neat_walking_robot.training.fitness import FitnessParams, FitnessFunction
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -23,6 +23,7 @@ class TrainingConfig:
     robot_spec: RobotSpec
     episode_params: EpisodeParams
     fitness_params: FitnessParams
+    fitness_function: FitnessFunction = FitnessFunction.V1
     neat_config_path: Path
     seed: int
 
@@ -31,7 +32,7 @@ class TrainingConfig:
         episode_time = self.episode_params.episode_time
         if self.fitness_params.target_speed <= target_distance / episode_time:
             raise ValueError(
-                f"Target speed ({self.fitness_params.target_speed}) in fitness_params is must be grater than minimal speed ({target_distance / episode_time}) needed for episode completion")
+                f"Target speed ({self.fitness_params.target_speed}) in fitness_params must be greater than minimal speed ({target_distance / episode_time}) needed for episode completion")
 
 
 def default_training_config(neat_config_path: Path, seed: int) -> TrainingConfig:
@@ -92,6 +93,7 @@ def save_training_config_to_json(training_config: TrainingConfig, path: Path):
         "robot_specification": asdict(training_config.robot_spec),
         "episode_params": asdict(training_config.episode_params),
         "fitness_params": asdict(training_config.fitness_params),
+        "fitness_function": training_config.fitness_function,
         "neat_config_path": str(training_config.neat_config_path),
         "seed": training_config.seed,
     }

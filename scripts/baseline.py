@@ -1,3 +1,4 @@
+import argparse
 import json
 from dataclasses import asdict
 from pathlib import Path
@@ -9,7 +10,8 @@ from neat_walking_robot.robot import Robot
 from neat_walking_robot.simulation import prepare_simulation
 from neat_walking_robot.training import (
     default_training_config,
-    fitness_v1,
+    FITNESS,
+    FitnessFunction,
     run_episode,
     to_json,
 )
@@ -31,7 +33,7 @@ def sine_gait_action(t: float, f: float):
     return [0.0, fr_rl_thigh, fr_rl_calf, 0.0, fl_rr_thigh, fl_rr_calf, 0.0, fl_rr_thigh, fl_rr_calf, 0.0, fr_rl_thigh,
             fr_rl_calf]
 
-def run_baseline():
+def run_baseline(args):
     training_config = default_training_config(CONFIG_PATH, 42)
 
     sd = training_config.simulation_data
@@ -48,7 +50,12 @@ def run_baseline():
     robot = Robot(rs, env.get_starting_pos(), client)
     policy = lambda obs,t : sine_gait_action(t, ep.frequency)
     results = run_episode(robot, env, policy, sd.dt, ep)
-    fitness = fitness_v1(results, fp)
+
+    if args.fitness == "v1":
+        fitness = FITNESS[FitnessFunction.V1](results, fp)
+    else:
+        fitness = FITNESS[FitnessFunction.V2](results, fp)
+
     v = results.progress / results.duration
 
     data = {
@@ -61,4 +68,8 @@ def run_baseline():
 
 
 if __name__ == "__main__":
-    run_baseline()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--fitness", choices=["v1", "v2"], default="v1")
+    args = parser.parse_args()
+
+    run_baseline(args)
