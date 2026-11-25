@@ -9,6 +9,8 @@ Contract (agreed 2026-11-15, refined in stage 5):
 The function is pure, so these tests need no simulator.
 """
 
+import math
+
 import pytest
 
 from neat_walking_robot.training.episode import EndReason, EpisodeMetrics
@@ -18,13 +20,14 @@ from neat_walking_robot.training.fitness import fitness_v1 as fitness
 T = 10.0
 D = 4.0
 # target_speed and mean_action_change_threshold are used only by fitness_v2 (stage 5); v1 ignores them.
-PARAMS = FitnessParams(goal_bonus=2.0, penalty=1.0, target_speed=1.0, mean_action_change_threshold=0.2)
+PARAMS = FitnessParams(goal_bonus=2.0, penalty=1.0, target_speed=1.0, mean_action_change_threshold=0.2,
+                       yaw_limit=math.pi / 2)
 
 
 def metrics(progress: float, reason: EndReason, duration: float = T) -> EpisodeMetrics:
     return EpisodeMetrics(
         progress=progress, goal_distance=D, end_reason=reason,
-        episode_length=T, duration=duration, max_y=0.0, max_yaw=0.0, mean_action_change=0.0,
+        episode_length=T, duration=duration, max_y=0.0, max_yaw=0.0, mean_yaw=0.0, max_joint_action_change=0.0,
     )
 
 
@@ -69,7 +72,8 @@ def test_earlier_goal_scores_higher():
 
 # --- FitnessParams validation (fields added for fitness_v2, 2026-11-24) ---------
 
-VALID = {"goal_bonus": 2.0, "penalty": 1.0, "target_speed": 1.0, "mean_action_change_threshold": 0.2}
+VALID = {"goal_bonus": 2.0, "penalty": 1.0, "target_speed": 1.0, "mean_action_change_threshold": 0.2,
+         "yaw_limit": math.pi / 2}
 
 
 @pytest.mark.parametrize("field, value", [
@@ -79,6 +83,8 @@ VALID = {"goal_bonus": 2.0, "penalty": 1.0, "target_speed": 1.0, "mean_action_ch
     ("target_speed", -1.0),
     ("mean_action_change_threshold", 0.0),
     ("mean_action_change_threshold", -0.2),
+    ("yaw_limit", 0.0),
+    ("yaw_limit", -1.0),
 ])
 def test_invalid_fitness_params_are_rejected(field, value):
     with pytest.raises(ValueError):
@@ -91,7 +97,8 @@ def test_zero_bonus_and_penalty_are_allowed():
 
 def test_v1_ignores_the_v2_fields():
     """Changing the v2-only parameters must not change v1 scores (old runs replay with the same fitness)."""
-    other = FitnessParams(goal_bonus=2.0, penalty=1.0, target_speed=3.0, mean_action_change_threshold=0.05)
+    other = FitnessParams(goal_bonus=2.0, penalty=1.0, target_speed=3.0, mean_action_change_threshold=0.05,
+                          yaw_limit=0.3)
     for m in (metrics(2.5, EndReason.TIME_LIMIT), metrics(D, EndReason.GOAL, duration=6.0),
               metrics(1.5, EndReason.FALL, duration=2.0)):
         assert fitness(m, other) == fitness(m, PARAMS)

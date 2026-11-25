@@ -172,14 +172,15 @@ def main(arguments):
         if v:
             tag += k
 
-    joints_path = OUTPUT_DIR / f"joints_{tag}.csv"
-    contacts_path = OUTPUT_DIR / f"contacts_{tag}.csv"
+    joints_path = OUTPUT_DIR / f"joints_{arguments.name}.csv"
+    contacts_path = OUTPUT_DIR / f"contacts_{arguments.name}.csv"
     joints_df.to_csv(joints_path)
     contacts_df.to_csv(contacts_path)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--run_name", type=str, required=True)
+    parser.add_argument("--name", type=str, required=True)
     parser.add_argument("--baseline", action="store_true")
     parser.add_argument("--velocity_limit", action="store_true")
     parser.add_argument("--fine_dt", action="store_true")

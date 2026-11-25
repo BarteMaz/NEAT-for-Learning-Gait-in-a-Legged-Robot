@@ -1,9 +1,11 @@
-"""Tests for EpisodeMetrics.mean_action_change (run_episode) and the TrainingConfig validation of target_speed
+"""Tests for EpisodeMetrics.max_joint_action_change (run_episode) and the TrainingConfig validation of target_speed
 (stage 5, 2026-11-24).
 
-Contract for mean_action_change:
-- m = mean over executed action steps n and joints j of |a_j[n] - a_j[n-1]|, with a[-1] = 0 (the rest pose),
+Contract for max_joint_action_change (changed 2026-11-25):
+- for each joint j, the mean over executed action steps n of |a_j[n] - a_j[n-1]|, with a[-1] = 0 (the rest pose);
+  the metric is the LARGEST of these 12 per-joint means,
 - it is computed from the RAW policy output (before the robot's action filter),
+- mean_yaw is the mean over executed action steps of |yaw| after the step (not the maximum),
 - the policy is called exactly once per executed action step (no extra call before the loop:
   stateful policies, the recording wrapper in diagnose.py and the real-time replay rely on it).
 
@@ -22,7 +24,7 @@ import pickle
 from neat_walking_robot.training.config import TrainingConfig, default_training_config
 from neat_walking_robot.training.fitness import FitnessFunction
 from neat_walking_robot.training.episode import EndReason, run_episode
-from test_episode import DT, EPISODE, build
+from test_episode import DT, EPISODE, build, teleport_at
 
 N_JOINTS = 12
 
@@ -57,14 +59,14 @@ def world(client):
 def test_standing_still_has_zero_action_change(world):
     env, robot = world
     m = run_episode(robot, env, constant(0.0), DT, EPISODE)
-    assert m.mean_action_change == 0.0
+    assert m.max_joint_action_change == 0.0
 
 
 def test_constant_action_counts_only_the_first_step_from_rest(world):
     """a[-1] = 0, then 0.2 forever: one change of 0.2 per joint, averaged over all steps."""
     env, robot = world
     m = run_episode(robot, env, constant(0.2), DT, EPISODE)
-    assert m.mean_action_change == pytest.approx(0.2 / steps_run(m))
+    assert m.max_joint_action_change == pytest.approx(0.2 / steps_run(m))
 
 
 def test_alternating_action_is_measured_in_absolute_value(world):
@@ -73,7 +75,7 @@ def test_alternating_action_is_measured_in_absolute_value(world):
     a = 0.05
     m = run_episode(robot, env, alternating(a), DT, EPISODE)
     n = steps_run(m)
-    assert m.mean_action_change == pytest.approx((a + 2 * a * (n - 1)) / n)
+    assert m.max_joint_action_change == pytest.approx((a + 2 * a * (n - 1)) / n)
 
 
 def test_opposite_joints_do_not_cancel(world):
@@ -89,11 +91,11 @@ def test_opposite_joints_do_not_cancel(world):
 
     m = run_episode(robot, env, policy, DT, EPISODE)
     n = steps_run(m)
-    assert m.mean_action_change == pytest.approx((0.05 + 0.1 * (n - 1)) / n)
+    assert m.max_joint_action_change == pytest.approx((0.05 + 0.1 * (n - 1)) / n)
 
 
-def test_action_change_is_averaged_over_joints(world):
-    """Only one of 12 joints moves (+-a): the metric is 1/12 of that joint's mean |delta a|, not its maximum."""
+def test_action_change_is_the_largest_per_joint_mean(world):
+    """Only one of 12 joints moves (+-a): the metric is that joint's mean |delta a|, not 1/12 of it."""
     env, robot = world
     a = 0.1
     state = {"n": 0}
@@ -106,7 +108,24 @@ def test_action_change_is_averaged_over_joints(world):
 
     m = run_episode(robot, env, policy, DT, EPISODE)
     n = steps_run(m)
-    assert m.mean_action_change == pytest.approx((a + 2 * a * (n - 1)) / n / N_JOINTS)
+    assert m.max_joint_action_change == pytest.approx((a + 2 * a * (n - 1)) / n)
+
+
+def test_largest_joint_wins_over_the_others(world):
+    """Joint 0 alternates +-0.1, joint 1 +-0.02, the rest stand: the metric follows joint 0."""
+    env, robot = world
+    state = {"n": 0}
+
+    def policy(obs, t):
+        sign = 1.0 if state["n"] % 2 == 0 else -1.0
+        state["n"] += 1
+        action = np.zeros(N_JOINTS)
+        action[0], action[1] = 0.1 * sign, 0.02 * sign
+        return action
+
+    m = run_episode(robot, env, policy, DT, EPISODE)
+    n = steps_run(m)
+    assert m.max_joint_action_change == pytest.approx((0.1 + 0.2 * (n - 1)) / n)
 
 
 def test_action_change_uses_the_raw_policy_output_not_the_filtered_one(client):
@@ -117,7 +136,34 @@ def test_action_change_uses_the_raw_policy_output_not_the_filtered_one(client):
     a = 0.05
     m = run_episode(robot, env, alternating(a), DT, EPISODE)
     n = steps_run(m)
-    assert m.mean_action_change == pytest.approx((a + 2 * a * (n - 1)) / n)
+    assert m.max_joint_action_change == pytest.approx((a + 2 * a * (n - 1)) / n)
+
+
+# --- mean yaw ---------------------------------------------------------------------------
+
+def test_standing_robot_has_almost_zero_mean_yaw(world):
+    env, robot = world
+    m = run_episode(robot, env, constant(0.0), DT, EPISODE)
+    assert m.mean_yaw < 0.02
+
+
+def test_mean_yaw_is_the_mean_not_the_maximum(world):
+    """The robot is turned by 0.3 rad in place halfway through a standing episode: mean ~0.15, max ~0.3."""
+    env, robot = world
+    n_steps = round(EPISODE.episode_time / (EPISODE.k * DT))
+    policy = teleport_at(robot, n_steps // 2, lambda pos: pos, orientation=(0, 0, 0.3))
+    m = run_episode(robot, env, policy, DT, EPISODE)
+    assert m.end_reason == EndReason.TIME_LIMIT
+    assert m.max_yaw == pytest.approx(0.3, abs=0.03)
+    assert m.mean_yaw == pytest.approx(0.15, abs=0.02)
+
+
+def test_mean_yaw_uses_the_absolute_value(world):
+    """Turned by -0.3 rad from the start: |yaw| counts, a signed mean would be negative."""
+    env, robot = world
+    policy = teleport_at(robot, 0, lambda pos: pos, orientation=(0, 0, -0.3))
+    m = run_episode(robot, env, policy, DT, EPISODE)
+    assert m.mean_yaw == pytest.approx(0.3, abs=0.03)
 
 
 # --- policy calls -------------------------------------------------------------------

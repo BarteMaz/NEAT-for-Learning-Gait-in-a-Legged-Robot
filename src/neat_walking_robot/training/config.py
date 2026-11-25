@@ -5,6 +5,8 @@ from dataclasses import asdict, dataclass
 from enum import Enum
 from pathlib import Path
 
+import numpy as np
+
 from neat_walking_robot.environments import (
     BaseEnvironmentData,
     EnvironmentType,
@@ -58,7 +60,8 @@ def default_training_config(neat_config_path: Path, seed: int) -> TrainingConfig
         goal_bonus=2.0,
         penalty=1.0,
         target_speed=1.0,
-        mean_action_change_threshold=0.2
+        mean_action_change_threshold=0.2,
+        yaw_limit=np.pi/2
     )
     return TrainingConfig(
         simulation_data=simulation_data,

@@ -5,11 +5,15 @@ Contract:
 - at the goal: bonus = goal_bonus * clip((v - v_min) / (v_t - v_min), 0, 1), v = progress / t_goal,
   v_min = D / T (the slowest speed that still reaches the goal), so the bonus is 0 at t_goal = T
   (no jump at the goal line) and saturates at the target speed v_t,
-- the positive part (progress + bonus) is multiplied by s = min(1, m0 / m), m = mean |delta action|;
+- the positive part (progress + bonus) is multiplied by s = min(1, m0 / m), where m = the LARGEST per-joint
+  mean |delta action| (updated 2026-11-25: one vibrating joint must not hide in an average over 12 joints);
   s = 1 for m <= m0, including m = 0,
-- the fall / wall penalty is subtracted AFTER the multiplication, so rough actions never soften it,
+- and by the heading factor h = max(0, 1 - mean|yaw| / yaw_limit) (added 2026-11-25),
+- the fall / wall penalty is subtracted AFTER the multiplication, so rough or crooked motion never softens it,
 - falling never beats standing still.
 """
+
+import math
 
 import pytest
 
@@ -19,15 +23,18 @@ from neat_walking_robot.training.fitness import FITNESS, FitnessFunction, Fitnes
 T = 10.0
 D = 4.0
 V_MIN = D / T  # 0.4 m/s
-PARAMS = FitnessParams(goal_bonus=2.0, penalty=1.0, target_speed=1.0, mean_action_change_threshold=0.2)
+PARAMS = FitnessParams(goal_bonus=2.0, penalty=1.0, target_speed=1.0, mean_action_change_threshold=0.2,
+                       yaw_limit=math.pi / 2)
 M0 = PARAMS.mean_action_change_threshold
+YAW_LIMIT = PARAMS.yaw_limit
 
 
-def metrics(progress: float, reason: EndReason, duration: float = T, change: float = 0.0) -> EpisodeMetrics:
+def metrics(progress: float, reason: EndReason, duration: float = T, change: float = 0.0,
+            yaw: float = 0.0) -> EpisodeMetrics:
     return EpisodeMetrics(
         progress=progress, goal_distance=D, end_reason=reason,
-        episode_length=T, duration=duration, max_y=0.0, max_yaw=0.0,
-        mean_action_change=change,
+        episode_length=T, duration=duration, max_y=0.0, max_yaw=yaw, mean_yaw=yaw,
+        max_joint_action_change=change,
     )
 
 
@@ -113,6 +120,46 @@ def test_falling_never_beats_standing(fall_time, change):
     fall = fitness_v2(metrics(0.0, EndReason.FALL, duration=fall_time, change=change), PARAMS)
     stand = fitness_v2(metrics(0.0, EndReason.TIME_LIMIT), PARAMS)
     assert fall < stand
+
+
+# --- heading (added 2026-11-25) -------------------------------------------------------
+
+def test_straight_walk_is_not_penalised():
+    assert fitness_v2(metrics(2.5, EndReason.TIME_LIMIT, yaw=0.0), PARAMS) == pytest.approx(2.5)
+
+
+def test_heading_factor_scales_the_positive_part():
+    """mean |yaw| = yaw_limit / 4 -> h = 0.75: goal at 1 m/s -> (4 + 2) * 0.75."""
+    m = metrics(D, EndReason.GOAL, duration=D / 1.0, yaw=YAW_LIMIT / 4)
+    assert fitness_v2(m, PARAMS) == pytest.approx((D + PARAMS.goal_bonus) * 0.75)
+
+
+@pytest.mark.parametrize("yaw", [YAW_LIMIT, 1.5 * YAW_LIMIT, math.pi])
+def test_heading_factor_never_goes_negative(yaw):
+    """At or beyond the limit the positive part is 0, never negative (a negative factor would reward progress less
+    the further the robot walked)."""
+    assert fitness_v2(metrics(3.0, EndReason.TIME_LIMIT, yaw=yaw), PARAMS) == pytest.approx(0.0)
+
+
+def test_more_crooked_never_scores_higher():
+    yaws = [0.0, 0.1, 0.3, 0.6, 1.0, 1.5]
+    scores = [fitness_v2(metrics(3.0, EndReason.TIME_LIMIT, yaw=y), PARAMS) for y in yaws]
+    assert all(a >= b - 1e-12 for a, b in zip(scores, scores[1:]))
+
+
+def test_smoothness_and_heading_factors_multiply():
+    """m = 2 * m0 (s = 0.5) and mean |yaw| = yaw_limit / 2 (h = 0.5): (4 + 2) * 0.5 * 0.5."""
+    m = metrics(D, EndReason.GOAL, duration=D / 1.0, change=2 * M0, yaw=YAW_LIMIT / 2)
+    assert fitness_v2(m, PARAMS) == pytest.approx((D + PARAMS.goal_bonus) * 0.25)
+
+
+@pytest.mark.parametrize("progress", [0.0, 0.5, 2.0])
+def test_turning_while_falling_never_pays(progress):
+    """The penalty stays outside the product: a crooked fall is never better than a straight one."""
+    straight = fitness_v2(metrics(progress, EndReason.FALL, duration=2.0, yaw=0.0), PARAMS)
+    crooked = fitness_v2(metrics(progress, EndReason.FALL, duration=2.0, yaw=YAW_LIMIT), PARAMS)
+    assert crooked <= straight
+    assert crooked == pytest.approx(-PARAMS.penalty)
 
 
 # --- the case that motivated v2 ---------------------------------------------------

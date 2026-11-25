@@ -38,7 +38,8 @@ class EpisodeMetrics:
     duration: float
     max_y: float
     max_yaw: float
-    mean_action_change: float
+    mean_yaw: float
+    max_joint_action_change: float
 
 
 def run_episode(robot: Robot, env: BaseEnvironment, policy, dt: float, params: EpisodeParams) -> EpisodeMetrics:
@@ -50,6 +51,7 @@ def run_episode(robot: Robot, env: BaseEnvironment, policy, dt: float, params: E
     progress = 0.0
     max_y = 0.0
     max_yaw = 0.0
+    mean_yaw = 0.0
     episode_duration = 0.0
     reason = None
 
@@ -57,7 +59,7 @@ def run_episode(robot: Robot, env: BaseEnvironment, policy, dt: float, params: E
     robot.reset()
     x_0 = robot.start_base_position[0]
     prev_action = np.zeros(len(robot.moving_joints))
-    mean_action_change = 0.0
+    mean_action_change = np.zeros(len(robot.moving_joints))
 
     for n in range(action_number):
         t = n * params.k * dt
@@ -66,8 +68,8 @@ def run_episode(robot: Robot, env: BaseEnvironment, policy, dt: float, params: E
         robot.apply_action(action)
 
         # calculate mean action change
-        current_mean_action_change = np.mean(np.abs(np.diff([prev_action, action], axis=0)))
-        mean_action_change = (mean_action_change * n + current_mean_action_change) / (n + 1)
+        current_action_change = np.abs(np.asarray(action, dtype=float) - np.asarray(prev_action, dtype=float))
+        mean_action_change = (mean_action_change * n + current_action_change) / (n + 1)
         prev_action = action
 
         # step simulation
@@ -84,6 +86,7 @@ def run_episode(robot: Robot, env: BaseEnvironment, policy, dt: float, params: E
         max_y = max(max_y, np.abs(current_y))
 
         max_yaw = max(max_yaw, np.abs(yaw))
+        mean_yaw = (mean_yaw * n + np.abs(yaw)) / (n + 1)
 
         if len(p.getContactPoints(bodyA=env.wall_right, bodyB=robot.robot_id, physicsClientId=client_id)):
             reason = EndReason.WALL
@@ -121,7 +124,8 @@ def run_episode(robot: Robot, env: BaseEnvironment, policy, dt: float, params: E
         duration=episode_duration,
         max_y=max_y,
         max_yaw=max_yaw,
-        mean_action_change=mean_action_change,
+        mean_yaw=mean_yaw,
+        max_joint_action_change=np.max(mean_action_change),
     )
 
     return measurements

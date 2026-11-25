@@ -2,10 +2,16 @@ import numpy as np
 from datetime import datetime
 
 
-x = np.array([1, 2, 3, 4, 5, 6])
-y = np.array([2, 2, 4, 4, 5.5, 6])
+x = [1, 2, 3, 4, 5, 6]
+y = [2, 3, 4, 5, 6, 8]
 
-print(np.diff([x, y], axis=0))
+res = np.abs(np.asarray(x) - np.asarray(y))
+
+
+
+res2 = (np.asarray([0, 0, 0, 0, 0, 0]) * 2 + res) / 3
+
+print(res2)
 
 
 

@@ -36,7 +36,8 @@ TRAINING = evaluation.TrainingConfig(
     robot_spec=A1_ROBOT_SPEC,
     episode_params=EpisodeParams(episode_time=2.0, frequency=3, k=4),  # short: tests stay fast
     # target_speed must exceed D / T = 4 m / 2 s (TrainingConfig validation, 2026-11-24)
-    fitness_params=FitnessParams(goal_bonus=2.0, penalty=1.0, target_speed=3.0, mean_action_change_threshold=0.2),
+    fitness_params=FitnessParams(goal_bonus=2.0, penalty=1.0, target_speed=3.0, mean_action_change_threshold=0.2,
+                                 yaw_limit=math.pi / 2),
     neat_config_path=Path(CONFIG_PATH),
     seed=0,
 )
