@@ -1,0 +1,12 @@
+{
+  "name": "v1_filter",
+  "generations": 100,
+  "num_workers": 12,
+  "pop_size": 100,
+  "runtime": 279.7894489,
+  "neat-python_version": "2.0.0",
+  "last_commit_hash": {
+    "commit": "309977f31e3fb8e569b63789d3c0aaccf61db77c",
+    "dirty": true
+  }
+}

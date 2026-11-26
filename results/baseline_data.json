@@ -1,0 +1,13 @@
+{
+  "metrics": {
+    "progress": 3.993017522219893,
+    "goal_distance": 4.0,
+    "end_reason": "GOAL",
+    "episode_length": 10.0,
+    "duration": 7.383333333333333,
+    "max_y": 0.30583316405073935,
+    "max_yaw": 0.10325494951222634
+  },
+  "fitness": 4.516350855553227,
+  "velocity": 0.5408150142961481
+}

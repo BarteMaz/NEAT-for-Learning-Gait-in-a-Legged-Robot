@@ -1,0 +1,72 @@
+{
+  "simulation_data": {
+    "dt": 0.004166666666666667,
+    "gravity": [
+      0.0,
+      0.0,
+      -9.81
+    ],
+    "num_solver_iterations": 50
+  },
+  "environment_type": "FLAT",
+  "environment_data": {
+    "track_length": 6.0,
+    "track_width": 3.0,
+    "wall_height": 3.0,
+    "wall_thickness": 0.25,
+    "ground_thickness": 0.2,
+    "end_distance": 1.0,
+    "start_distance": 1.0,
+    "friction": 1.0,
+    "lowest_ground_point": -0.2,
+    "buffer_space": 0.5
+  },
+  "robot_specification": {
+    "model_path": "a1/a1.urdf",
+    "toes_links_names": [
+      "FR_toe",
+      "FL_toe",
+      "RR_toe",
+      "RL_toe"
+    ],
+    "rest_position": {
+      "FR_hip_joint": 0.0,
+      "FL_hip_joint": 0.0,
+      "RR_hip_joint": 0.0,
+      "RL_hip_joint": 0.0,
+      "FR_upper_joint": 0.8,
+      "FL_upper_joint": 0.8,
+      "RR_upper_joint": 0.8,
+      "RL_upper_joint": 0.8,
+      "FR_lower_joint": -1.5,
+      "FL_lower_joint": -1.5,
+      "RR_lower_joint": -1.5,
+      "RL_lower_joint": -1.5
+    },
+    "angular_range": 0.525,
+    "stabilization_time": 120,
+    "start_height": 0.32,
+    "joints_velocity_scale": 10.0,
+    "base_velocity_scale": 5.0,
+    "fall_threshold": 0.8,
+    "roll_and_pitch_scale": 0.8,
+    "apply_velocity_limit": false,
+    "position_gain": 0.1,
+    "action_filter_alpha": 0.5
+  },
+  "episode_params": {
+    "episode_time": 10.0,
+    "frequency": 3.0,
+    "k": 4
+  },
+  "fitness_params": {
+    "goal_bonus": 2.0,
+    "penalty": 1.0,
+    "target_speed": 1.0,
+    "mean_action_change_threshold": 0.2,
+    "yaw_limit": 1.5707963267948966
+  },
+  "fitness_function": "V2",
+  "neat_config_path": "C:\\Users\\X\\neat-walking-robot\\results\\v2_filter_1_2026-11-25_15-21-28\\a1.ini",
+  "seed": 1
+}
