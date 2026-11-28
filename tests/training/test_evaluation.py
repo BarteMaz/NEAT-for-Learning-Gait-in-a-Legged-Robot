@@ -1,14 +1,15 @@
 """Tests for the NEAT evaluation layer (training/evaluation.py) and the A1 config file.
 
-Contract (agreed 2026-11-15):
-- configs/a1.ini: 36 inputs (34 observations + sin and cos of the phase), 12 tanh outputs,
-- the network sees obs followed by [sin(2 pi f t), cos(2 pi f t)],
+Contract (agreed 2026-11-27; the phase inputs sin/cos were removed):
+- configs/a1.ini: 33 inputs (exactly the robot observation), 12 tanh outputs,
+- make_policy(net) passes the observation to the network unchanged and returns its output,
 - init_worker builds its own DIRECT server from the TrainingConfig,
 - eval_genome is deterministic: the same genome gives the same fitness twice,
-- a network with all weights and biases 0 outputs 0, i.e. the rest pose, so the robot stands.
+- a network with all weights and biases 0 outputs 0, i.e. zero joint velocities, so the robot
+  stays where it is and scores about 0 (it sags slowly: about 1.5 cm in a 2 s episode),
+- default_training_config uses FitnessFunction.DISTANCE (TrainingConfig itself has no default).
 """
 
-import math
 from pathlib import Path
 
 import neat
@@ -16,15 +17,16 @@ import numpy as np
 import pybullet as p
 import pytest
 
-import neat_walking_robot
 from neat_walking_robot.environments import BaseEnvironmentData, EnvironmentType
 from neat_walking_robot.robot import A1_ROBOT_SPEC
 from neat_walking_robot.simulation import SimulationData
 from neat_walking_robot.training import evaluation
+from neat_walking_robot.training.config import default_training_config
 from neat_walking_robot.training.episode import EpisodeParams
-from neat_walking_robot.training.fitness import FitnessParams
+from neat_walking_robot.training.fitness import FitnessFunction, FitnessParams
 
-CONFIG_PATH =  "configs/a1.ini"
+CONFIG_PATH = "configs/a1.ini"
+OBS_LEN = 33
 
 TRAINING = evaluation.TrainingConfig(
     simulation_data=SimulationData(num_solver_iterations=60),  # non-default on purpose
@@ -34,10 +36,9 @@ TRAINING = evaluation.TrainingConfig(
         ground_thickness=0.2, friction=1.0, start_distance=1.0, end_distance=1.0,
     ),
     robot_spec=A1_ROBOT_SPEC,
-    episode_params=EpisodeParams(episode_time=2.0, frequency=3, k=4),  # short: tests stay fast
-    # target_speed must exceed D / T = 4 m / 2 s (TrainingConfig validation, 2026-11-24)
-    fitness_params=FitnessParams(goal_bonus=2.0, penalty=1.0, target_speed=3.0, mean_action_change_threshold=0.2,
-                                 yaw_limit=math.pi / 2),
+    episode_params=EpisodeParams(episode_time=2.0, k=4),  # short: tests stay fast
+    fitness_params=FitnessParams(goal_bonus=2.0, penalty=1.0),
+    fitness_function=FitnessFunction.DISTANCE,
     neat_config_path=Path(CONFIG_PATH),
     seed=0,
 )
@@ -75,15 +76,35 @@ def zero_genome(neat_config):
 
 # --- config file --------------------------------------------------------------
 
-def test_config_has_36_inputs_and_12_outputs(neat_config):
-    assert neat_config.genome_config.num_inputs == 36
+def test_config_has_33_inputs_and_12_outputs(neat_config):
+    assert neat_config.genome_config.num_inputs == OBS_LEN
     assert neat_config.genome_config.num_outputs == 12
 
 
+def test_config_inputs_match_the_robot_observation(worker, neat_config):
+    assert worker["robot"].get_observation().shape == (neat_config.genome_config.num_inputs,)
+
+
 def test_outputs_use_tanh(neat_config):
-    """tanh gives [-1, 1] with 0 = rest pose; sigmoid would give [0, 1] with 0.5 at zero input."""
+    """tanh gives [-1, 1] with 0 = zero velocity; sigmoid would give [0, 1] with 0.5 at zero input."""
     assert neat_config.genome_config.activation_default == "tanh"
     assert neat_config.genome_config.activation_options == ["tanh"]
+
+
+# --- make_policy --------------------------------------------------------------
+
+def test_make_policy_passes_the_observation_unchanged():
+    seen = []
+
+    class FakeNet:
+        def activate(self, inputs):
+            seen.append(inputs)
+            return [0.25] * 12
+
+    obs = np.linspace(-1.0, 1.0, OBS_LEN)
+    policy = evaluation.make_policy(FakeNet())
+    assert policy(obs) == [0.25] * 12
+    assert seen == [list(obs)]
 
 
 # --- worker -------------------------------------------------------------------
@@ -105,23 +126,34 @@ def test_init_worker_applies_the_simulation_data(worker):
 
 # --- eval_genome --------------------------------------------------------------
 
-def test_network_gets_observation_and_phase(worker, neat_config, monkeypatch):
-    """Spy network: records every input vector and returns the rest pose."""
-    seen = []
+def test_network_gets_exactly_the_robot_observation(worker, neat_config, monkeypatch):
+    """Spy network and spy observation: every network input is the observation of that step."""
+    robot = worker["robot"]
+    observations, inputs = [], []
+    real_observation = robot.get_observation
+
+    def recording_observation():
+        obs = real_observation()
+        observations.append(obs)
+        return obs
 
     class SpyNet:
-        def activate(self, inputs):
-            seen.append(list(inputs))
+        def activate(self, values):
+            inputs.append(list(values))
             return [0.0] * 12
 
+    monkeypatch.setattr(robot, "get_observation", recording_observation)
     monkeypatch.setattr(neat.nn.FeedForwardNetwork, "create", staticmethod(lambda g, c: SpyNet()))
     evaluation.eval_genome(first_genome(neat_config), neat_config)
 
-    f = TRAINING.episode_params.frequency
-    step = TRAINING.episode_params.k * TRAINING.simulation_data.dt
-    assert all(len(x) == 36 for x in seen)
-    assert seen[0][34:] == pytest.approx([0.0, 1.0])
-    assert seen[1][34:] == pytest.approx([math.sin(2 * math.pi * f * step), math.cos(2 * math.pi * f * step)])
+    assert len(inputs) == len(observations) > 0
+    for given, obs in zip(inputs, observations):
+        assert given == list(obs)
+
+
+def test_default_training_config_uses_the_distance_fitness():
+    config = default_training_config(Path(CONFIG_PATH), seed=0)
+    assert config.fitness_function == FitnessFunction.DISTANCE
 
 
 def test_eval_genome_returns_a_finite_float(worker, neat_config):
@@ -137,7 +169,7 @@ def test_eval_genome_is_deterministic(worker, neat_config):
     assert evaluation.eval_genome(genome, neat_config) == first
 
 
-def test_zero_network_keeps_the_robot_standing(worker, neat_config):
-    """All weights and biases 0: tanh(0) = 0 = rest pose, so no fall, no progress, fitness about 0."""
+def test_zero_network_keeps_the_robot_in_place(worker, neat_config):
+    """All weights and biases 0: tanh(0) = 0 = zero joint velocity, so no fall and about no distance."""
     fitness = evaluation.eval_genome(zero_genome(neat_config), neat_config)
     assert fitness == pytest.approx(0.0, abs=0.05)

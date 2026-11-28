@@ -1,12 +1,12 @@
 {
-  "name": "v1_filter",
+  "name": "fixed_base_toes",
   "generations": 100,
   "num_workers": 12,
   "pop_size": 100,
-  "runtime": 279.7894489,
+  "runtime": 447.2208843999997,
   "neat-python_version": "2.0.0",
   "last_commit_hash": {
-    "commit": "309977f31e3fb8e569b63789d3c0aaccf61db77c",
+    "commit": "86b963bed7ea25df7358adcfef43ab789a6e6c3b",
     "dirty": true
   }
 }

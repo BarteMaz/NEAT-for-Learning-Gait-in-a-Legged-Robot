@@ -22,6 +22,8 @@ import importlib.util
 import json
 import multiprocessing as mp
 import pickle
+import subprocess
+import sys
 from dataclasses import replace
 from pathlib import Path
 
@@ -29,6 +31,7 @@ import neat
 import pybullet as p
 import pytest
 
+from neat_walking_robot.robot import A1_ROBOT_SPEC
 from neat_walking_robot.training.fitness import FitnessFunction
 
 from neat_walking_robot.training import evaluation
@@ -74,9 +77,7 @@ def train(tmp_path, monkeypatch):
     def short_config(neat_config_path, seed):
         config = original(neat_config_path, seed)
         episode = replace(config.episode_params, episode_time=SHORT_EPISODE)
-        # a short episode raises D / T, and TrainingConfig requires target_speed > D / T (2026-11-24)
-        fitness = replace(config.fitness_params, target_speed=10.0)
-        return replace(config, episode_params=episode, fitness_params=fitness)
+        return replace(config, episode_params=episode)
 
     monkeypatch.setattr(module, "default_training_config", short_config)
 
@@ -91,13 +92,13 @@ def train(tmp_path, monkeypatch):
 
 
 def run(train, *, name="t", seed=3, generations=2, workers=0, pop_size=POP_SIZE,
-        fitness="v1", filter_alpha=1.0) -> Path:
+        fitness="distance", fixed_base=False) -> Path:
     """Runs main() and returns the new run directory. Defaults match train.py's argparse defaults."""
     results = train.RESULTS_PATH
     before = set(results.iterdir()) if results.exists() else set()
     args = argparse.Namespace(
         name=name, seed=seed, generations=generations, workers=workers, pop_size=pop_size,
-        fitness=fitness, filter_alpha=filter_alpha,
+        fitness=fitness, fixed_base=fixed_base,
     )
     train.main(args)
     if "client" in evaluation._worker:
@@ -166,31 +167,17 @@ def test_run_data_records_the_arguments(train):
     assert data["neat-python_version"]
 
 
-def test_default_arguments_keep_fitness_v1_and_no_filter(train):
-    """Without --fitness and --filter_alpha a run is configured exactly like the first major run."""
-    config = load_pickle(run(train) / "training_config.pkl")
-    assert config.fitness_function == FitnessFunction.V1
-    assert config.robot_spec.action_filter_alpha == 1.0
-
-
-def test_fitness_and_filter_arguments_reach_the_saved_config(train):
+def test_fitness_argument_reaches_the_saved_config(train):
     """The run directory must say how the run was made: in the pickle and in the readable JSON."""
-    run_dir = run(train, fitness="v2", filter_alpha=0.5)
+    run_dir = run(train, fitness="distance")
     config = load_pickle(run_dir / "training_config.pkl")
-    assert config.fitness_function == FitnessFunction.V2
-    assert config.robot_spec.action_filter_alpha == 0.5
+    assert config.fitness_function == FitnessFunction.DISTANCE
 
     saved = json.loads((run_dir / "training_config.json").read_text(encoding="utf-8"))
-    assert saved["robot_specification"]["action_filter_alpha"] == 0.5
-    assert saved["fitness_function"] == "V2"
-
-
-@pytest.mark.parametrize("changed", [{"fitness": "v2"}, {"filter_alpha": 0.5}], ids=["fitness", "filter"])
-def test_fitness_and_filter_arguments_change_the_scores(train, changed):
-    """Each argument must have a visible effect: same seed, different best-fitness history."""
-    reference = run(train, name="ref", seed=13)
-    other = run(train, name="other", seed=13, **changed)
-    assert read_rows(reference / "fitness_history.csv") != read_rows(other / "fitness_history.csv")
+    assert saved["fitness_function"] == "DISTANCE"
+    assert saved["robot_specification"]["max_joint_velocity"] == A1_ROBOT_SPEC.max_joint_velocity
+    assert saved["robot_specification"]["max_joint_effort"] == A1_ROBOT_SPEC.max_joint_effort
+    assert saved["robot_specification"]["use_fixed_base"] is False
 
 
 # ---------------------------------------------------------------- statistics and genomes
@@ -221,11 +208,39 @@ def test_winner_is_the_best_genome_of_the_run(train):
     assert winner.fitness == pytest.approx(max(best_column), rel=0, abs=1e-12)
 
 
-@pytest.mark.parametrize("fitness, filter_alpha", [("v1", 1.0), ("v2", 0.5)])
-def test_saved_winner_reevaluates_to_its_saved_fitness(train, fitness, filter_alpha):
+def test_fixed_base_is_off_by_default(train):
+    config = load_pickle(run(train) / "training_config.pkl")
+    assert config.robot_spec.use_fixed_base is False
+    assert config.robot_spec.start_height == A1_ROBOT_SPEC.start_height
+
+
+def test_fixed_base_argument_reaches_the_saved_config(train):
+    """--fixed_base pins the trunk 1 m up (legs in the air), in the pickle and in the JSON."""
+    run_dir = run(train, fitness="toes_path", fixed_base=True)
+    config = load_pickle(run_dir / "training_config.pkl")
+    assert config.robot_spec.use_fixed_base is True
+    assert config.robot_spec.start_height == pytest.approx(1.0)
+    assert config.fitness_function == FitnessFunction.TOES_PATH
+
+    saved = json.loads((run_dir / "training_config.json").read_text(encoding="utf-8"))
+    assert saved["robot_specification"]["use_fixed_base"] is True
+    assert saved["fitness_function"] == "TOES_PATH"
+
+
+def test_command_line_parses(tmp_path):
+    """The tests above call main() with a ready Namespace, so they never build the argparse parser.
+    Running the script with --help builds it: a wrong add_argument fails here, before any training."""
+    script = Path(__file__).resolve().parents[2] / "scripts" / "train.py"
+    result = subprocess.run([sys.executable, str(script), "--help"], capture_output=True, text=True, cwd=tmp_path)
+    assert result.returncode == 0, result.stderr
+    assert "--fixed_base" in result.stdout and "toes_path" in result.stdout
+
+
+@pytest.mark.parametrize("fitness, fixed_base", [("distance", False), ("toes_path", True)])
+def test_saved_winner_reevaluates_to_its_saved_fitness(train, fitness, fixed_base):
     """Everything replay.py needs is in the run directory, and the result is bit-identical,
-    also when the run used fitness_v2 and the action filter (both must come from the saved config)."""
-    run_dir = run(train, generations=2, fitness=fitness, filter_alpha=filter_alpha)
+    also for the fixed-base experiment (robot spec and fitness come from the saved config)."""
+    run_dir = run(train, generations=2, fitness=fitness, fixed_base=fixed_base)
     winner = load_pickle(run_dir / "winner.pkl")
     config = load_pickle(run_dir / "training_config.pkl")
     neat_config = neat.Config(

@@ -60,9 +60,12 @@ def main(arguments):
 
     # adjust config based on arguments
     training_config = replace(training_config, fitness_function=FitnessFunction(arguments.fitness))
-    if arguments.filter_alpha != 1.0:
-        training_config = replace(training_config, robot_spec=replace(training_config.robot_spec, action_filter_alpha=arguments.filter_alpha))
-
+    if arguments.fixed_base:
+        training_config = replace(training_config, robot_spec=replace(
+            training_config.robot_spec,
+            use_fixed_base=arguments.fixed_base,
+            start_height=1.0
+        ))
     save_training_config_to_pickle(training_config, results_path)
     save_training_config_to_json(training_config, results_path)
 
@@ -140,8 +143,8 @@ if __name__ == "__main__":
     parser.add_argument("--pop_size", type=int, default=None)
     parser.add_argument("--workers", type=int, default=0)
     parser.add_argument("--name", type=str, default="a1_train")
-    parser.add_argument("--fitness", type=str, choices=[f.value for f in FitnessFunction], default="v1")
-    parser.add_argument("--filter_alpha", type=float, default=1.0)
+    parser.add_argument("--fixed_base", action="store_true")
+    parser.add_argument("--fitness", type=str, choices=[f.value for f in FitnessFunction], default="distance")
     args = parser.parse_args()
 
     main(args)

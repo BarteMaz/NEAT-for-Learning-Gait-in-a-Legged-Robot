@@ -1,0 +1,609 @@
+{
+  "meta": {
+    "created": "2026-11-27T10:08:56+01:00",
+    "pybullet": "pybullet 3.2.7",
+    "simulation": {
+      "dt": 0.004166666666666667,
+      "gravity": [
+        0.0,
+        0.0,
+        -9.81
+      ],
+      "num_solver_iterations": 50
+    },
+    "measure_angle_deg": 60.0,
+    "settle_time_s": 0.1,
+    "measure_time_s": 1.0,
+    "stick_time_s": 2.0,
+    "slide_speed_threshold_m_s": 0.01,
+    "body_mass_kg": 1.0,
+    "slider_linear_and_angular_damping": 0.0,
+    "box_half_extents_m": [
+      0.1,
+      0.1,
+      0.02
+    ],
+    "toe_sled_half_span_m": 0.1
+  },
+  "a1_contact_dynamics": {
+    "toe_dynamics": {
+      "lateral_friction": 0.5,
+      "restitution": 0.0,
+      "rolling_friction": 0.0,
+      "spinning_friction": 0.0,
+      "contact_damping": -1.0,
+      "contact_stiffness": -1.0
+    },
+    "toe_collision_radius": 0.02,
+    "lateral_friction_of_all_links": [
+      0.5
+    ],
+    "links": {
+      "trunk": {
+        "lateral_friction": 0.5,
+        "restitution": 0.0,
+        "rolling_friction": 0.0,
+        "spinning_friction": 0.0,
+        "contact_damping": -1.0,
+        "contact_stiffness": -1.0
+      },
+      "imu_link": {
+        "lateral_friction": 0.5,
+        "restitution": 0.0,
+        "rolling_friction": 0.0,
+        "spinning_friction": 0.0,
+        "contact_damping": -1.0,
+        "contact_stiffness": -1.0
+      },
+      "FR_hip": {
+        "lateral_friction": 0.5,
+        "restitution": 0.0,
+        "rolling_friction": 0.0,
+        "spinning_friction": 0.0,
+        "contact_damping": -1.0,
+        "contact_stiffness": -1.0
+      },
+      "FR_upper_shoulder": {
+        "lateral_friction": 0.5,
+        "restitution": 0.0,
+        "rolling_friction": 0.0,
+        "spinning_friction": 0.0,
+        "contact_damping": -1.0,
+        "contact_stiffness": -1.0
+      },
+      "FR_upper": {
+        "lateral_friction": 0.5,
+        "restitution": 0.0,
+        "rolling_friction": 0.0,
+        "spinning_friction": 0.0,
+        "contact_damping": -1.0,
+        "contact_stiffness": -1.0
+      },
+      "FR_lower": {
+        "lateral_friction": 0.5,
+        "restitution": 0.0,
+        "rolling_friction": 0.0,
+        "spinning_friction": 0.0,
+        "contact_damping": -1.0,
+        "contact_stiffness": -1.0
+      },
+      "FR_toe": {
+        "lateral_friction": 0.5,
+        "restitution": 0.0,
+        "rolling_friction": 0.0,
+        "spinning_friction": 0.0,
+        "contact_damping": -1.0,
+        "contact_stiffness": -1.0
+      },
+      "FL_hip": {
+        "lateral_friction": 0.5,
+        "restitution": 0.0,
+        "rolling_friction": 0.0,
+        "spinning_friction": 0.0,
+        "contact_damping": -1.0,
+        "contact_stiffness": -1.0
+      },
+      "FL_upper_shoulder": {
+        "lateral_friction": 0.5,
+        "restitution": 0.0,
+        "rolling_friction": 0.0,
+        "spinning_friction": 0.0,
+        "contact_damping": -1.0,
+        "contact_stiffness": -1.0
+      },
+      "FL_upper": {
+        "lateral_friction": 0.5,
+        "restitution": 0.0,
+        "rolling_friction": 0.0,
+        "spinning_friction": 0.0,
+        "contact_damping": -1.0,
+        "contact_stiffness": -1.0
+      },
+      "FL_lower": {
+        "lateral_friction": 0.5,
+        "restitution": 0.0,
+        "rolling_friction": 0.0,
+        "spinning_friction": 0.0,
+        "contact_damping": -1.0,
+        "contact_stiffness": -1.0
+      },
+      "FL_toe": {
+        "lateral_friction": 0.5,
+        "restitution": 0.0,
+        "rolling_friction": 0.0,
+        "spinning_friction": 0.0,
+        "contact_damping": -1.0,
+        "contact_stiffness": -1.0
+      },
+      "RR_hip": {
+        "lateral_friction": 0.5,
+        "restitution": 0.0,
+        "rolling_friction": 0.0,
+        "spinning_friction": 0.0,
+        "contact_damping": -1.0,
+        "contact_stiffness": -1.0
+      },
+      "RR_upper_shoulder": {
+        "lateral_friction": 0.5,
+        "restitution": 0.0,
+        "rolling_friction": 0.0,
+        "spinning_friction": 0.0,
+        "contact_damping": -1.0,
+        "contact_stiffness": -1.0
+      },
+      "RR_upper": {
+        "lateral_friction": 0.5,
+        "restitution": 0.0,
+        "rolling_friction": 0.0,
+        "spinning_friction": 0.0,
+        "contact_damping": -1.0,
+        "contact_stiffness": -1.0
+      },
+      "RR_lower": {
+        "lateral_friction": 0.5,
+        "restitution": 0.0,
+        "rolling_friction": 0.0,
+        "spinning_friction": 0.0,
+        "contact_damping": -1.0,
+        "contact_stiffness": -1.0
+      },
+      "RR_toe": {
+        "lateral_friction": 0.5,
+        "restitution": 0.0,
+        "rolling_friction": 0.0,
+        "spinning_friction": 0.0,
+        "contact_damping": -1.0,
+        "contact_stiffness": -1.0
+      },
+      "RL_hip": {
+        "lateral_friction": 0.5,
+        "restitution": 0.0,
+        "rolling_friction": 0.0,
+        "spinning_friction": 0.0,
+        "contact_damping": -1.0,
+        "contact_stiffness": -1.0
+      },
+      "RL_upper_shoulder": {
+        "lateral_friction": 0.5,
+        "restitution": 0.0,
+        "rolling_friction": 0.0,
+        "spinning_friction": 0.0,
+        "contact_damping": -1.0,
+        "contact_stiffness": -1.0
+      },
+      "RL_upper": {
+        "lateral_friction": 0.5,
+        "restitution": 0.0,
+        "rolling_friction": 0.0,
+        "spinning_friction": 0.0,
+        "contact_damping": -1.0,
+        "contact_stiffness": -1.0
+      },
+      "RL_lower": {
+        "lateral_friction": 0.5,
+        "restitution": 0.0,
+        "rolling_friction": 0.0,
+        "spinning_friction": 0.0,
+        "contact_damping": -1.0,
+        "contact_stiffness": -1.0
+      },
+      "RL_toe": {
+        "lateral_friction": 0.5,
+        "restitution": 0.0,
+        "rolling_friction": 0.0,
+        "spinning_friction": 0.0,
+        "contact_damping": -1.0,
+        "contact_stiffness": -1.0
+      }
+    },
+    "default_box_lateral_friction": 0.5
+  },
+  "combination_rule": {
+    "pairs": [
+      {
+        "mu_block": 0.5,
+        "mu_ground": 0.5,
+        "mu_measured": 0.2500362407653312,
+        "product": 0.25,
+        "min": 0.5,
+        "max": 0.5,
+        "arithmetic_mean": 0.5,
+        "geometric_mean": 0.5
+      },
+      {
+        "mu_block": 0.5,
+        "mu_ground": 1.0,
+        "mu_measured": 0.5001832072479149,
+        "product": 0.5,
+        "min": 0.5,
+        "max": 1.0,
+        "arithmetic_mean": 0.75,
+        "geometric_mean": 0.7071067811865476
+      },
+      {
+        "mu_block": 0.5,
+        "mu_ground": 1.6,
+        "mu_measured": 0.8002901726822021,
+        "product": 0.8,
+        "min": 0.5,
+        "max": 1.6,
+        "arithmetic_mean": 1.05,
+        "geometric_mean": 0.8944271909999159
+      },
+      {
+        "mu_block": 1.0,
+        "mu_ground": 0.6,
+        "mu_measured": 0.6001716668437044,
+        "product": 0.6,
+        "min": 0.6,
+        "max": 1.0,
+        "arithmetic_mean": 0.8,
+        "geometric_mean": 0.7745966692414834
+      },
+      {
+        "mu_block": 0.8,
+        "mu_ground": 1.2,
+        "mu_measured": 0.9604096291675825,
+        "product": 0.96,
+        "min": 0.8,
+        "max": 1.2,
+        "arithmetic_mean": 1.0,
+        "geometric_mean": 0.9797958971132712
+      },
+      {
+        "mu_block": 1.0,
+        "mu_ground": 1.0,
+        "mu_measured": 1.0004369755266946,
+        "product": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "arithmetic_mean": 1.0,
+        "geometric_mean": 1.0
+      },
+      {
+        "mu_block": 0.3,
+        "mu_ground": 2.0,
+        "mu_measured": 0.6001716668437044,
+        "product": 0.6,
+        "min": 0.3,
+        "max": 2.0,
+        "arithmetic_mean": 1.15,
+        "geometric_mean": 0.7745966692414834
+      }
+    ],
+    "rms_error_per_model": {
+      "product": 0.0002769118350089104,
+      "min": 0.1958463688811992,
+      "max": 0.6685400201933925,
+      "arithmetic_mean": 0.2754361361846914,
+      "geometric_mean": 0.1582878056197531
+    },
+    "best_model": "product"
+  },
+  "current_setting": {
+    "ground_friction": 1.0,
+    "expected_mu_eff": 0.5,
+    "box_sliding": {
+      "mu_measured": 0.5001832072479149,
+      "acceleration": 6.04231057957432,
+      "slid": true,
+      "fit_residual_rms": 3.0769310669194725e-05,
+      "max_normal_offset": 0.0005272172295992236,
+      "final_tilt_deg": 0.20691191546889381
+    },
+    "toe_sled_sliding": {
+      "mu_measured": 0.49999298648078666,
+      "acceleration": 6.043243612437084,
+      "slid": true,
+      "fit_residual_rms": 1.19470702879129e-06,
+      "max_normal_offset": 0.000255468749999821,
+      "final_tilt_deg": 0.0001410923916447005
+    },
+    "box_critical_angle": {
+      "critical_angle_deg": 26.57952880859375,
+      "mu_from_angle": 0.5003158928392943,
+      "creep_1deg_below_m": 6.254303182177484e-05
+    },
+    "toe_sled_critical_angle": {
+      "critical_angle_deg": 26.58917236328125,
+      "mu_from_angle": 0.5005263534753719,
+      "creep_1deg_below_m": 0.00029603951893099583
+    }
+  },
+  "robustness": {
+    "time_step": [
+      {
+        "dt": 0.004166666666666667,
+        "mu_measured": 0.5001832072479149,
+        "acceleration": 6.04231057957432,
+        "slid": true,
+        "fit_residual_rms": 3.0769310669194725e-05,
+        "max_normal_offset": 0.0005272172295992236,
+        "final_tilt_deg": 0.20691191546889381
+      },
+      {
+        "dt": 0.0010416666666666667,
+        "mu_measured": 0.5000076321999603,
+        "acceleration": 6.043171775184537,
+        "slid": true,
+        "fit_residual_rms": 2.849481811651824e-06,
+        "max_normal_offset": 0.00013692502719171658,
+        "final_tilt_deg": 0.015401587874175907
+      }
+    ],
+    "mass": [
+      {
+        "mass": 0.25,
+        "mu_measured": 0.5001832072479149,
+        "acceleration": 6.04231057957432,
+        "slid": true,
+        "fit_residual_rms": 3.0769310669194725e-05,
+        "max_normal_offset": 0.0005272172295992236,
+        "final_tilt_deg": 0.20691191546889381
+      },
+      {
+        "mass": 1.0,
+        "mu_measured": 0.5001832072479149,
+        "acceleration": 6.04231057957432,
+        "slid": true,
+        "fit_residual_rms": 3.0769310669194725e-05,
+        "max_normal_offset": 0.0005272172295992236,
+        "final_tilt_deg": 0.20691191546889381
+      },
+      {
+        "mass": 3.0,
+        "mu_measured": 0.5001832072479171,
+        "acceleration": 6.042310579574309,
+        "slid": true,
+        "fit_residual_rms": 3.07693106692976e-05,
+        "max_normal_offset": 0.0005272172295992236,
+        "final_tilt_deg": 0.2069119154671324
+      }
+    ],
+    "heading_sliding": [
+      {
+        "heading_deg": 0.0,
+        "mu_measured": 0.5001832072479149,
+        "acceleration": 6.04231057957432,
+        "slid": true,
+        "fit_residual_rms": 3.0769310669194725e-05,
+        "max_normal_offset": 0.0005272172295992236,
+        "final_tilt_deg": 0.20691191546889381
+      },
+      {
+        "heading_deg": 30.0,
+        "mu_measured": 0.5001832072479165,
+        "acceleration": 6.042310579574312,
+        "slid": true,
+        "fit_residual_rms": 3.076931066937495e-05,
+        "max_normal_offset": 0.0005272172295993346,
+        "final_tilt_deg": 0.20691191546889381
+      },
+      {
+        "heading_deg": 45.0,
+        "mu_measured": 0.5001832072479149,
+        "acceleration": 6.04231057957432,
+        "slid": true,
+        "fit_residual_rms": 3.076931066943251e-05,
+        "max_normal_offset": 0.0005272172295991126,
+        "final_tilt_deg": 0.2069119154671324
+      }
+    ],
+    "heading_sticking": [
+      {
+        "heading_deg": 0.0,
+        "critical_angle_deg": 26.57952880859375,
+        "mu_from_angle": 0.5003158928392943,
+        "creep_1deg_below_m": 6.254303182177484e-05
+      },
+      {
+        "heading_deg": 15.0,
+        "critical_angle_deg": 26.56024169921875,
+        "mu_from_angle": 0.49989507787346754,
+        "creep_1deg_below_m": 7.761459925539983e-05
+      },
+      {
+        "heading_deg": 30.0,
+        "critical_angle_deg": 25.59588623046875,
+        "mu_from_angle": 0.4790314437854743,
+        "creep_1deg_below_m": 7.162793591982284e-05
+      },
+      {
+        "heading_deg": 45.0,
+        "critical_angle_deg": 24.02398681640625,
+        "mu_from_angle": 0.44573041596357466,
+        "creep_1deg_below_m": 6.653799896359928e-05
+      },
+      {
+        "heading_deg": 60.0,
+        "critical_angle_deg": 25.76947021484375,
+        "mu_from_angle": 0.48276168936721275,
+        "creep_1deg_below_m": 7.245785012304634e-05
+      },
+      {
+        "heading_deg": 90.0,
+        "critical_angle_deg": 26.57952880859375,
+        "mu_from_angle": 0.5003158928392943,
+        "creep_1deg_below_m": 6.254303182555456e-05
+      }
+    ],
+    "pybullet_default_damping": [
+      {
+        "angle_deg": 35.0,
+        "damping": 0.0,
+        "mu_measured": 0.5000927473558179,
+        "acceleration": 1.6080987566004146,
+        "slid": true,
+        "fit_residual_rms": 6.733610193892386e-05,
+        "max_normal_offset": 0.000769447898977898,
+        "final_tilt_deg": 0.23395005430105179
+      },
+      {
+        "angle_deg": 35.0,
+        "damping": 0.04,
+        "mu_measured": 0.5084983545555701,
+        "acceleration": 1.540552292749763,
+        "slid": true,
+        "fit_residual_rms": 0.00042829113191212903,
+        "max_normal_offset": 0.0007695419385588296,
+        "final_tilt_deg": 0.19108150085796496
+      },
+      {
+        "angle_deg": 60.0,
+        "damping": 0.0,
+        "mu_measured": 0.5001832072479149,
+        "acceleration": 6.04231057957432,
+        "slid": true,
+        "fit_residual_rms": 3.0769310669194725e-05,
+        "max_normal_offset": 0.0005272172295992236,
+        "final_tilt_deg": 0.20691191546889381
+      },
+      {
+        "angle_deg": 60.0,
+        "damping": 0.04,
+        "mu_measured": 0.61623554429204,
+        "acceleration": 5.473073866372886,
+        "slid": true,
+        "fit_residual_rms": 0.003728775394537048,
+        "max_normal_offset": 0.0005273730779658843,
+        "final_tilt_deg": 0.2026046286403999
+      },
+      {
+        "angle_deg": 75.0,
+        "damping": 0.0,
+        "mu_measured": 0.5000496662730098,
+        "acceleration": 8.20609883626405,
+        "slid": true,
+        "fit_residual_rms": 1.6833933563698067e-05,
+        "max_normal_offset": 0.0002994179697130603,
+        "final_tilt_deg": 0.08292663091616197
+      },
+      {
+        "angle_deg": 75.0,
+        "damping": 0.04,
+        "mu_measured": 0.8810378343929912,
+        "acceleration": 7.238764226417281,
+        "slid": true,
+        "fit_residual_rms": 0.006402429056929395,
+        "max_normal_offset": 0.00029944099912446675,
+        "final_tilt_deg": 0.08297616904718942
+      }
+    ]
+  },
+  "calibration": [
+    {
+      "target_mu": 0.6,
+      "fitted_ground_friction": 1.199619674682617,
+      "analytic_ground_friction": 1.2,
+      "box_sliding": {
+        "mu_measured": 0.5999814622280915,
+        "acceleration": 5.552800138896553,
+        "slid": true,
+        "fit_residual_rms": 3.614650586554623e-05,
+        "max_normal_offset": 0.0005018464320082343,
+        "final_tilt_deg": 0.15653904069860394
+      },
+      "toe_sled_sliding": {
+        "mu_measured": 0.599801443081503,
+        "acceleration": 5.55368313281057,
+        "slid": true,
+        "fit_residual_rms": 1.4329239675124902e-06,
+        "max_normal_offset": 0.000255468749999821,
+        "final_tilt_deg": 0.00014671746748126888
+      },
+      "box_critical_angle": {
+        "critical_angle_deg": 30.97698974609375,
+        "mu_from_angle": 0.6003141534314794,
+        "creep_1deg_below_m": 0.00012242078552337994
+      },
+      "expected_critical_angle_deg": 30.96375653207352
+    },
+    {
+      "target_mu": 0.8,
+      "fitted_ground_friction": 1.5994052886962886,
+      "analytic_ground_friction": 1.6,
+      "box_sliding": {
+        "mu_measured": 0.7999927173008481,
+        "acceleration": 4.571744932764682,
+        "slid": true,
+        "fit_residual_rms": 4.0275939672167934e-05,
+        "max_normal_offset": 0.0004885494291421475,
+        "final_tilt_deg": 0.19891533128830424
+      },
+      "toe_sled_sliding": {
+        "mu_measured": 0.799691584497796,
+        "acceleration": 4.5732219891636525,
+        "slid": true,
+        "fit_residual_rms": 1.908607473314875e-06,
+        "max_normal_offset": 0.000255468749999821,
+        "final_tilt_deg": 0.00015854463969385905
+      },
+      "box_critical_angle": {
+        "critical_angle_deg": 38.66290283203125,
+        "mu_from_angle": 0.8000885811689559,
+        "creep_1deg_below_m": 0.00024133020387794184
+      },
+      "expected_critical_angle_deg": 38.659808254090095
+    },
+    {
+      "target_mu": 1.0,
+      "fitted_ground_friction": 1.9991153717041015,
+      "analytic_ground_friction": 2.0,
+      "box_sliding": {
+        "mu_measured": 0.999994513154938,
+        "acceleration": 3.59073612410037,
+        "slid": true,
+        "fit_residual_rms": 4.930756313562445e-05,
+        "max_normal_offset": 0.00048227461525840356,
+        "final_tilt_deg": 0.19568284042850362
+      },
+      "toe_sled_sliding": {
+        "mu_measured": 0.9995441265195414,
+        "acceleration": 3.5929452705469913,
+        "slid": true,
+        "fit_residual_rms": 2.3757315640307466e-06,
+        "max_normal_offset": 0.000255468749999821,
+        "final_tilt_deg": 0.00025959633196219033
+      },
+      "box_critical_angle": {
+        "critical_angle_deg": 44.99871826171875,
+        "mu_from_angle": 0.99995525989454,
+        "creep_1deg_below_m": 0.00032453353671721435
+      },
+      "expected_critical_angle_deg": 45.0
+    }
+  ],
+  "recommendation": {
+    "target_mu_rubber_dry_concrete": 0.8,
+    "target_mu_range": [
+      0.6,
+      1.0
+    ],
+    "foot_lateral_friction": 0.5,
+    "ground_friction": 1.599,
+    "ground_friction_range": [
+      1.2,
+      1.999
+    ]
+  }
+}

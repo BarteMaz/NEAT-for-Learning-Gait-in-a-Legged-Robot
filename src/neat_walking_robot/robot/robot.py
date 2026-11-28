@@ -12,19 +12,17 @@ class RobotSpec:
     model_path: str
     toes_links_names: tuple[str, str, str, str]
     rest_position: dict[str, float]
-    angular_range: float
     stabilization_time: int
     start_height: float
-    joints_velocity_scale: float
+    use_fixed_base: bool
+    toes_friction: float
+    body_friction:float
+    max_joint_velocity: float
+    max_joint_effort: float
     base_velocity_scale: float
     fall_threshold: float
     roll_and_pitch_scale: float
-    apply_velocity_limit: bool = False
-    position_gain: float = 0.1
-    action_filter_alpha: float = 1.0
-    def __post_init__(self):
-        if not (0 < self.action_filter_alpha <= 1.0):
-            raise ValueError("action_filter_alpha must be in (0, 1]")
+
 
 
 A1_ROBOT_SPEC = RobotSpec(
@@ -45,20 +43,23 @@ A1_ROBOT_SPEC = RobotSpec(
         "RL_lower_joint": -1.5,
     },
     start_height=0.32,
-    angular_range=0.525,
     stabilization_time=120,
-    joints_velocity_scale=10.0,
     base_velocity_scale=5.0,
+    use_fixed_base=False,
+    toes_friction=0.8,
+    body_friction=0.4,
     fall_threshold=0.8,
     roll_and_pitch_scale=0.8,
+    max_joint_velocity=21.0,
+    max_joint_effort=33.5,
 )
 
-def scale_to_angles(value: float, angular_range: np.ndarray):
+def scale_to_velocity(value: float, velocity_range: np.ndarray):
     value = np.clip(value, -1.0, 1.0)
-    return angular_range[0] + (value + 1.0) * 0.5 * (angular_range[1] - angular_range[0])
+    return velocity_range[0] + (value + 1.0) * 0.5 * (velocity_range[1] - velocity_range[0])
 
-def scale_to_neat_input(angle: float,angular_range: np.ndarray):
-    return 2 * (angle - angular_range[0]) / (angular_range[1] - angular_range[0]) - 1.0
+def scale_to_neat_input(angle: float, scaled_range: np.ndarray):
+    return 2 * (angle - scaled_range[0]) / (scaled_range[1] - scaled_range[0]) - 1.0
 
 class Robot:
     def __init__(self, spec: RobotSpec, start_pos: list[float], client_id: int):
@@ -67,28 +68,43 @@ class Robot:
         # specification
         self.model_path = spec.model_path
         self.toes_links_names = spec.toes_links_names
+        # load params
         self.rest_position = spec.rest_position
         self.start_height = spec.start_height
         self.stabilization_time = spec.stabilization_time
-        self.joints_velocity_scale = spec.joints_velocity_scale
+        # flag for testing
+        self.use_fixed_base = spec.use_fixed_base
+        # observation scales
         self.base_velocity_scale = spec.base_velocity_scale
         self.fall_threshold = spec.fall_threshold
         self.roll_and_pitch_scale = spec.roll_and_pitch_scale
-        self.apply_velocity_limit = spec.apply_velocity_limit
-        self.position_gain = spec.position_gain
-        self.action_filter_alpha = spec.action_filter_alpha
+        # velocity and effort limits
+        self.max_joint_velocity = spec.max_joint_velocity
+        self.max_joint_effort = spec.max_joint_effort
+        # friction
+        self.toes_friction = spec.toes_friction
+        self.body_friction = spec.body_friction
 
         # loading
         self.robot_id = p.loadURDF(
             self.model_path,
+            useFixedBase=self.use_fixed_base,
             flags=p.URDF_USE_INERTIA_FROM_FILE,
             basePosition=[start_pos[0], start_pos[1], start_pos[2] + self.start_height],
             physicsClientId=self.client_id
         )
+        p.changeDynamics(
+            bodyUniqueId=self.robot_id,
+            linkIndex=-1,
+            lateralFriction=self.body_friction,
+            angularDamping=0.0,
+            linearDamping=0.0,
+            physicsClientId=self.client_id
+        )
         self.reset_base_position = p.getBasePositionAndOrientation(self.robot_id, physicsClientId=self.client_id)[0]
-        self.moving_joints_limits = {}
-        self.moving_joints_efforts = {}
-        self.moving_joints_velocity = {}
+
+        self.moving_joints_velocity_limits = {}
+        self.moving_joints_position_limits = {}
         self.moving_joints_id = {}
         self.toes_links_id = {}
 
@@ -105,17 +121,13 @@ class Robot:
         for joint_info in joints_info.values():
             if joint_info.link_name in self.toes_links_names:
                 self.toes_links_id[joint_info.link_name] = joint_info.joint_index
+                self.set_link_friction(joint_info.joint_index, self.toes_friction)
+            else:
+                self.set_link_friction(joint_info.joint_index, self.body_friction)
 
             if joint_info.joint_type == JointType.REVOLUTE:
-                joint_rest_position = self.rest_position[joint_info.joint_name]
-                lower_limit = joint_info.joint_lower_limit
-                upper_limit = joint_info.joint_upper_limit
-                new_range = np.clip([joint_rest_position - spec.angular_range, joint_rest_position + spec.angular_range], lower_limit,
-                                    upper_limit)
-
-                self.moving_joints_limits[joint_info.joint_name] = new_range
-                self.moving_joints_efforts[joint_info.joint_name] = joint_info.effort
-                self.moving_joints_velocity[joint_info.joint_name] = joint_info.velocity
+                self.moving_joints_position_limits[joint_info.joint_name] = [joint_info.joint_lower_limit, joint_info.joint_upper_limit]
+                self.moving_joints_velocity_limits[joint_info.joint_name] = [-self.max_joint_velocity, self.max_joint_velocity]
                 self.moving_joints_id[joint_info.joint_name] = joint_info.joint_index
 
         self.moving_joints = tuple(self.moving_joints_id.keys())
@@ -123,11 +135,18 @@ class Robot:
         # initialize by reset()
         self.start_base_position = None
         self.start_base_orientation = None
-        self.filter_state = None
         self.reset()
 
 
-    def reset(self):
+    def set_link_friction(self, links_id: int, friction: float) -> None:
+        p.changeDynamics(
+            bodyUniqueId=self.robot_id,
+            linkIndex=links_id,
+            lateralFriction=friction,
+            physicsClientId=self.client_id
+        )
+
+    def reset(self) -> None:
         # reset robot's base
         p.resetBasePositionAndOrientation(self.robot_id, self.reset_base_position, [0,0,0,1], physicsClientId=self.client_id)
         p.resetBaseVelocity(self.robot_id, linearVelocity=[0.0, 0.0, 0.0], angularVelocity=[0.0, 0.0, 0.0], physicsClientId=self.client_id)
@@ -144,10 +163,10 @@ class Robot:
             p.setJointMotorControl2(
                 bodyUniqueId=self.robot_id,
                 jointIndex=joint_id,
-                force=self.moving_joints_efforts[joint_name],
+                force=self.max_joint_effort,
                 controlMode=p.POSITION_CONTROL,
                 targetPosition=self.rest_position[joint_name],
-                positionGain=self.position_gain,
+                positionGain=0.1,
                 physicsClientId=self.client_id
             )
 
@@ -158,56 +177,28 @@ class Robot:
         base_info = p.getBasePositionAndOrientation(self.robot_id, physicsClientId=self.client_id)
         self.start_base_position = base_info[0]
         self.start_base_orientation = base_info[1]
-        self.filter_state = np.zeros(len(self.moving_joints))
-
-    def ema_filter(self, values: list[float]) -> list[float]:
-        filtered_values = []
-        for i, prev in enumerate(self.filter_state):
-            val = np.clip(values[i], -1.0, 1.0)
-            filtered_values.append(self.action_filter_alpha * val + (1 - self.action_filter_alpha) * prev)
-
-        self.filter_state = filtered_values
-        return filtered_values
-
+        
 
     def apply_action(self, values: list[float]) -> None:
-        # filter action
-        filtered_values = self.ema_filter(values)
-
+        
         joints_id = []
-        joints_target_angles = []
+        joints_target_velocity = []
         joints_forces = []
-        joints_velocities = []
 
         for i, joint_name in enumerate(self.moving_joints):
-            joint_range = self.moving_joints_limits[joint_name]
+            joint_velocity_range = self.moving_joints_velocity_limits[joint_name]
             joints_id.append(self.moving_joints_id[joint_name])
-            joints_target_angles.append(scale_to_angles(filtered_values[i], joint_range))
-            joints_forces.append(self.moving_joints_efforts[joint_name])
-            joints_velocities.append(self.moving_joints_velocity[joint_name])
+            joints_target_velocity.append(scale_to_velocity(values[i], joint_velocity_range))
+            joints_forces.append(self.max_joint_effort)
 
-        if not self.apply_velocity_limit:
-            p.setJointMotorControlArray(
-                bodyUniqueId=self.robot_id,
-                jointIndices=joints_id,
-                controlMode=p.POSITION_CONTROL,
-                targetPositions=joints_target_angles,
-                forces=joints_forces,
-                positionGains=[self.position_gain for _ in range(len(self.moving_joints))],
-                physicsClientId=self.client_id
-            )
-        else:
-            for i in range(len(self.moving_joints)):
-                p.setJointMotorControl2(
-                    bodyUniqueId=self.robot_id,
-                    jointIndex=joints_id[i],
-                    controlMode=p.POSITION_CONTROL,
-                    targetPosition=joints_target_angles[i],
-                    force=joints_forces[i],
-                    positionGain=self.position_gain,
-                    maxVelocity=joints_velocities[i],
-                    physicsClientId=self.client_id
-                )
+        p.setJointMotorControlArray(
+            bodyUniqueId=self.robot_id,
+            jointIndices=joints_id,
+            controlMode=p.VELOCITY_CONTROL,
+            targetVelocities=joints_target_velocity,
+            forces=joints_forces,
+            physicsClientId=self.client_id
+        )
 
     def get_toes_contact_points(self):
         toes_contact_points = {}
@@ -218,6 +209,17 @@ class Robot:
                 toes_contact_points[link_name] = 0
         return toes_contact_points
 
+    def get_toes_world_position(self):
+        toes_world_position = {}
+        for link_name, link_id in self.toes_links_id.items():
+            toes_world_position[link_name] = p.getLinkState(
+                self.robot_id,
+                linkIndex=link_id,
+                computeForwardKinematics=True,
+                physicsClientId=self.client_id
+            )[0]
+        return toes_world_position
+
     def get_joints_state(self):
         joints_state = {}
         joint_states = p.getJointStates(self.robot_id, self.moving_joints_id.values(), physicsClientId=self.client_id)
@@ -227,21 +229,24 @@ class Robot:
         return joints_state
 
     def get_observation(self) -> np.ndarray:
-        base_ang_velocity = list(p.getBaseVelocity(self.robot_id, physicsClientId=self.client_id)[1])
+        quaterion = p.getBasePositionAndOrientation(self.robot_id, physicsClientId=self.client_id)[1]
+        orientation = p.getEulerFromQuaternion(quaterion)
+        rotate = np.array(p.getMatrixFromQuaternion(quaterion)).reshape(3, 3)
+
+        ang_velocity_vec = np.array(p.getBaseVelocity(self.robot_id, physicsClientId=self.client_id)[1])
+        base_ang_velocity = rotate.T @ ang_velocity_vec
         base_ang_velocity_scaled = [x / self.base_velocity_scale for x in base_ang_velocity]
 
-        orientation = p.getEulerFromQuaternion(p.getBasePositionAndOrientation(self.robot_id, physicsClientId=self.client_id)[1])
         roll_and_pitch_scaled = [x / self.roll_and_pitch_scale for x in orientation[0:2]]
-        yaw_scaled = [orientation[2] / (np.pi / 2)]
 
         toes_contacts = self.get_toes_contact_points()
         toes_contacts_list = [x for x in toes_contacts.values()]
 
         joints_state = self.get_joints_state()
-        joints_position_list = [scale_to_neat_input(joint[0], self.moving_joints_limits[name]) for name, joint in joints_state.items()]
-        joints_velocity_list = [joint[1] / self.joints_velocity_scale for joint in joints_state.values()]
+        joints_position_list = [scale_to_neat_input(joint[0], self.moving_joints_position_limits[name]) for name, joint in joints_state.items()]
+        joints_velocity_list = [joint[1] / self.max_joint_velocity for joint in joints_state.values()]
 
-        observation_vector = joints_position_list + joints_velocity_list + roll_and_pitch_scaled + base_ang_velocity_scaled + toes_contacts_list + yaw_scaled
+        observation_vector = joints_position_list + joints_velocity_list + roll_and_pitch_scaled + base_ang_velocity_scaled + toes_contacts_list
 
         return np.array(observation_vector)
 

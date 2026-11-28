@@ -1,104 +1,83 @@
-"""Tests for the preliminary fitness function (training/fitness.py).
+"""Tests for the fitness functions (training/fitness.py).
 
-Contract (agreed 2026-11-15, refined in stage 5):
-- progress along x counts, clipped to [0, goal_distance],
-- a time bonus bonus * (T - t_goal) / T only when the goal is reached,
-- a constant penalty on a fall or a wall contact,
-- no discontinuity at the goal: reaching it exactly at T scores like walking D without the goal,
-- falling must never pay better than standing still.
-The function is pure, so these tests need no simulator.
+Contract (agreed 2026-11-27, first training stage: distance from the start only):
+- `distance` = EpisodeMetrics.max_distance, the largest horizontal distance from the start; nothing else
+  counts: a fall or a wall contact costs nothing (agreed with the supervisor; later stages may change it),
+- `toes_total_path` = EpisodeMetrics.toes_path_length (diagnostic experiment with a fixed trunk,
+  2026-11-28); nothing else counts either,
+- FitnessFunction (enum with text values) and the FITNESS registry stay, so new functions are added by
+  name; every FitnessFunction has a function in FITNESS,
+- FitnessParams rejects a negative bonus or penalty.
+The functions are pure, so these tests need no simulator.
 """
-
-import math
 
 import pytest
 
 from neat_walking_robot.training.episode import EndReason, EpisodeMetrics
-from neat_walking_robot.training.fitness import FitnessParams
-from neat_walking_robot.training.fitness import fitness_v1 as fitness
+from neat_walking_robot.training.fitness import FITNESS, FitnessFunction, FitnessParams, distance, toes_total_path
 
 T = 10.0
-D = 4.0
-# target_speed and mean_action_change_threshold are used only by fitness_v2 (stage 5); v1 ignores them.
-PARAMS = FitnessParams(goal_bonus=2.0, penalty=1.0, target_speed=1.0, mean_action_change_threshold=0.2,
-                       yaw_limit=math.pi / 2)
+PARAMS = FitnessParams(goal_bonus=2.0, penalty=1.0)
 
 
-def metrics(progress: float, reason: EndReason, duration: float = T) -> EpisodeMetrics:
-    return EpisodeMetrics(
-        progress=progress, goal_distance=D, end_reason=reason,
-        episode_length=T, duration=duration, max_y=0.0, max_yaw=0.0, mean_yaw=0.0, max_joint_action_change=0.0,
-    )
+def metrics(max_distance: float, reason: EndReason, duration: float = T, toes_path_length: float = 0.0) -> EpisodeMetrics:
+    return EpisodeMetrics(max_distance=max_distance, toes_path_length=toes_path_length, end_reason=reason,
+                          episode_length=T, duration=duration)
 
 
-def test_time_limit_scores_progress():
-    assert fitness(metrics(2.5, EndReason.TIME_LIMIT), PARAMS) == pytest.approx(2.5)
+@pytest.mark.parametrize("reason", list(EndReason))
+def test_distance_is_the_max_distance_whatever_the_end_reason(reason):
+    assert distance(metrics(1.7, reason, duration=3.0), PARAMS) == pytest.approx(1.7)
 
 
-def test_backwards_progress_counts_as_zero():
-    assert fitness(metrics(-0.7, EndReason.TIME_LIMIT), PARAMS) == pytest.approx(0.0)
+def test_falling_costs_nothing():
+    """The same distance scores the same, fallen or not."""
+    fallen = distance(metrics(1.2, EndReason.FALL, duration=2.0), PARAMS)
+    walked = distance(metrics(1.2, EndReason.TIME_LIMIT), PARAMS)
+    assert fallen == walked
 
 
-def test_goal_scores_distance_plus_time_bonus():
-    """Goal after 6 s of 10 s: D + 2 * 4/10."""
-    assert fitness(metrics(D + 0.02, EndReason.GOAL, duration=6.0), PARAMS) == pytest.approx(D + 0.8)
+def test_distance_ignores_bonus_and_penalty():
+    other = FitnessParams(goal_bonus=50.0, penalty=50.0)
+    for m in (metrics(1.7, EndReason.TIME_LIMIT), metrics(1.7, EndReason.FALL, duration=2.0),
+              metrics(1.7, EndReason.WALL, duration=2.0)):
+        assert distance(m, other) == distance(m, PARAMS)
 
 
-def test_goal_bonus_is_continuous_at_the_time_limit():
-    at_limit = fitness(metrics(D, EndReason.GOAL, duration=T), PARAMS)
-    not_quite = fitness(metrics(D, EndReason.TIME_LIMIT), PARAMS)
-    assert at_limit == pytest.approx(not_quite)
+def test_standing_still_scores_zero():
+    assert distance(metrics(0.0, EndReason.TIME_LIMIT), PARAMS) == 0.0
 
 
-@pytest.mark.parametrize("reason", [EndReason.FALL, EndReason.WALL])
-def test_fall_and_wall_get_only_the_penalty(reason):
-    """No time bonus for ending early by falling: 1.5 - 1.0, not 1.5 - 1.0 + 2 * 0.8."""
-    assert fitness(metrics(1.5, reason, duration=2.0), PARAMS) == pytest.approx(0.5)
+def test_distance_ignores_the_toes_path():
+    assert distance(metrics(1.7, EndReason.TIME_LIMIT, toes_path_length=40.0), PARAMS) == pytest.approx(1.7)
 
 
-@pytest.mark.parametrize("fall_time", [0.1, 1.0, 5.0, 9.9])
-def test_falling_never_beats_standing(fall_time):
-    """An immediate fall without progress must score below standing still for the whole episode."""
-    fall = fitness(metrics(0.0, EndReason.FALL, duration=fall_time), PARAMS)
-    stand = fitness(metrics(0.0, EndReason.TIME_LIMIT), PARAMS)
-    assert fall < stand
+@pytest.mark.parametrize("reason", list(EndReason))
+def test_toes_total_path_is_the_toes_path_whatever_the_end_reason(reason):
+    m = metrics(0.3, reason, duration=3.0, toes_path_length=12.5)
+    assert toes_total_path(m, PARAMS) == pytest.approx(12.5)
 
 
-def test_earlier_goal_scores_higher():
-    early = fitness(metrics(D, EndReason.GOAL, duration=5.0), PARAMS)
-    late = fitness(metrics(D, EndReason.GOAL, duration=8.0), PARAMS)
-    assert early > late
+def test_toes_total_path_ignores_distance_and_params():
+    other = FitnessParams(goal_bonus=50.0, penalty=50.0)
+    m = metrics(0.0, EndReason.TIME_LIMIT, toes_path_length=12.5)
+    assert toes_total_path(m, other) == toes_total_path(m, PARAMS) == pytest.approx(12.5)
+    assert toes_total_path(metrics(3.0, EndReason.TIME_LIMIT, toes_path_length=12.5), PARAMS) == pytest.approx(12.5)
 
 
-# --- FitnessParams validation (fields added for fitness_v2, 2026-11-24) ---------
+def test_registry_maps_every_fitness_function():
+    assert FITNESS[FitnessFunction.DISTANCE] is distance
+    assert FITNESS[FitnessFunction.TOES_PATH] is toes_total_path
+    assert FitnessFunction("distance") is FitnessFunction.DISTANCE  # the values used by --fitness
+    assert FitnessFunction("toes_path") is FitnessFunction.TOES_PATH
+    assert set(FITNESS) == set(FitnessFunction)
 
-VALID = {"goal_bonus": 2.0, "penalty": 1.0, "target_speed": 1.0, "mean_action_change_threshold": 0.2,
-         "yaw_limit": math.pi / 2}
 
-
-@pytest.mark.parametrize("field, value", [
-    ("goal_bonus", -0.1),
-    ("penalty", -0.1),
-    ("target_speed", 0.0),
-    ("target_speed", -1.0),
-    ("mean_action_change_threshold", 0.0),
-    ("mean_action_change_threshold", -0.2),
-    ("yaw_limit", 0.0),
-    ("yaw_limit", -1.0),
-])
-def test_invalid_fitness_params_are_rejected(field, value):
+@pytest.mark.parametrize("field", ["goal_bonus", "penalty"])
+def test_negative_params_are_rejected(field):
     with pytest.raises(ValueError):
-        FitnessParams(**{**VALID, field: value})
+        FitnessParams(**{"goal_bonus": 2.0, "penalty": 1.0, field: -0.1})
 
 
 def test_zero_bonus_and_penalty_are_allowed():
-    FitnessParams(**{**VALID, "goal_bonus": 0.0, "penalty": 0.0})
-
-
-def test_v1_ignores_the_v2_fields():
-    """Changing the v2-only parameters must not change v1 scores (old runs replay with the same fitness)."""
-    other = FitnessParams(goal_bonus=2.0, penalty=1.0, target_speed=3.0, mean_action_change_threshold=0.05,
-                          yaw_limit=0.3)
-    for m in (metrics(2.5, EndReason.TIME_LIMIT), metrics(D, EndReason.GOAL, duration=6.0),
-              metrics(1.5, EndReason.FALL, duration=2.0)):
-        assert fitness(m, other) == fitness(m, PARAMS)
+    FitnessParams(goal_bonus=0.0, penalty=0.0)

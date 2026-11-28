@@ -11,9 +11,9 @@ from neat_walking_robot.training import make_policy, run_episode, FITNESS, load_
 
 
 def realtime(policy, delay):
-    def wrapped(obs, t):
+    def wrapped(obs):
         time.sleep(delay)
-        return policy(obs, t)
+        return policy(obs)
     return wrapped
 
 
@@ -35,8 +35,8 @@ def main(arguments):
 
     # create policy that runs realtime
     dt = training_config.simulation_data.dt
-    policy = make_policy(net, training_config.episode_params)
-    realtime_policy = realtime(policy, dt * training_config.episode_params.k)
+    policy = make_policy(net)
+    realtime_policy = realtime(policy, dt * training_config.episode_params.k * arguments.delay)
 
     # recreate simulation
     client = p.connect(p.GUI)
@@ -54,17 +54,17 @@ def main(arguments):
 
     # results
     fitness = FITNESS[training_config.fitness_function](metrics, training_config.fitness_params)
-    velocity = metrics.progress / metrics.duration
 
     print(f"================METRICS================")
     print(metrics)
     print(f"=======================================")
-    print(f"Winner's fitness: {fitness}\nWinner's' velocity: {velocity}")
+    print(f"Winner's fitness: {fitness}")
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--run_name", type=str, required=True)
+    parser.add_argument("--delay", type=int, default=1)
     args = parser.parse_args()
 
     main(args)

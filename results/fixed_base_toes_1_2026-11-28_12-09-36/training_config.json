@@ -43,30 +43,26 @@
       "RR_lower_joint": -1.5,
       "RL_lower_joint": -1.5
     },
-    "angular_range": 0.525,
     "stabilization_time": 120,
-    "start_height": 0.32,
-    "joints_velocity_scale": 10.0,
+    "start_height": 1.0,
+    "use_fixed_base": true,
+    "toes_friction": 0.8,
+    "body_friction": 0.4,
+    "max_joint_velocity": 21.0,
+    "max_joint_effort": 33.5,
     "base_velocity_scale": 5.0,
     "fall_threshold": 0.8,
-    "roll_and_pitch_scale": 0.8,
-    "apply_velocity_limit": false,
-    "position_gain": 0.1,
-    "action_filter_alpha": 0.5
+    "roll_and_pitch_scale": 0.8
   },
   "episode_params": {
     "episode_time": 10.0,
-    "frequency": 3.0,
     "k": 4
   },
   "fitness_params": {
     "goal_bonus": 2.0,
-    "penalty": 1.0,
-    "target_speed": 1.0,
-    "mean_action_change_threshold": 0.2,
-    "yaw_limit": 1.5707963267948966
+    "penalty": 1.0
   },
-  "fitness_function": "V2",
-  "neat_config_path": "C:\\Users\\X\\neat-walking-robot\\results\\v2_filter_1_2026-11-25_15-21-28\\a1.ini",
+  "fitness_function": "TOES_PATH",
+  "neat_config_path": "C:\\Users\\X\\neat-walking-robot\\results\\fixed_base_toes_1_2026-11-28_12-09-36\\a1.ini",
   "seed": 1
 }

@@ -18,114 +18,91 @@ class EndReason(Enum):
 @dataclass(frozen=True, kw_only=True)
 class EpisodeParams:
     episode_time: float
-    frequency: float
     k: int
     def __post_init__(self):
         if self.episode_time <= 0:
             raise ValueError("Episode time must be greater than 0")
-        if self.frequency <= 0:
-            raise ValueError("Frequency must be greater than 0")
         if self.k <= 0:
             raise ValueError("k must be greater than 0")
 
 
 @dataclass(frozen=True, kw_only=True)
 class EpisodeMetrics:
-    progress: float
-    goal_distance: float
+    max_distance: float
+    toes_path_length: float
     end_reason: EndReason
     episode_length: float
     duration: float
-    max_y: float
-    max_yaw: float
-    mean_yaw: float
-    max_joint_action_change: float
+
 
 
 def run_episode(robot: Robot, env: BaseEnvironment, policy, dt: float, params: EpisodeParams) -> EpisodeMetrics:
     # prep variables
     action_number = round(params.episode_time / (params.k * dt))
     client_id = robot.client_id
-    x_goal = env.params.track_length / 2 - env.params.end_distance
+    flag_wall_contact = False
 
-    progress = 0.0
-    max_y = 0.0
-    max_yaw = 0.0
-    mean_yaw = 0.0
+    max_distance = 0.0
+    toes_path_length = 0.0
     episode_duration = 0.0
     reason = None
 
 
     robot.reset()
-    x_0 = robot.start_base_position[0]
-    prev_action = np.zeros(len(robot.moving_joints))
-    mean_action_change = np.zeros(len(robot.moving_joints))
+    start_x, start_y = robot.start_base_position[0:2]
+    toes_position = robot.get_toes_world_position()
+    walls_id = [env.wall_back, env.wall_left, env.wall_right, env.wall_front]
 
     for n in range(action_number):
-        t = n * params.k * dt
         observation = robot.get_observation()
-        action = policy(observation, t)
+        action = policy(observation)
         robot.apply_action(action)
-
-        # calculate mean action change
-        current_action_change = np.abs(np.asarray(action, dtype=float) - np.asarray(prev_action, dtype=float))
-        mean_action_change = (mean_action_change * n + current_action_change) / (n + 1)
-        prev_action = action
 
         # step simulation
         for _ in range(params.k):
             p.stepSimulation(physicsClientId=client_id)
 
-        # check end conditions
+        new_toes_position = robot.get_toes_world_position()
+        for link_name, pos in new_toes_position.items():
+            toes_path_length += np.linalg.norm(np.array(pos) - np.array(toes_position[link_name]))
+        toes_position = new_toes_position
+
         info = p.getBasePositionAndOrientation(robot.robot_id, physicsClientId=client_id)
         current_x, current_y = info[0][0:2]
-        roll, pitch, yaw = p.getEulerFromQuaternion(info[1])
+        roll, pitch = p.getEulerFromQuaternion(info[1])[0:2]
 
-        progress = current_x - x_0
+        # calculate distance from starting point
+        current_distance = np.sqrt((current_x - start_x) ** 2 + (current_y - start_y) ** 2)
+        if max_distance < current_distance:
+            max_distance = current_distance
 
-        max_y = max(max_y, np.abs(current_y))
+        # check end conditions
+        for wall in walls_id:
+            if len(p.getContactPoints(bodyA=wall, bodyB=robot.robot_id, physicsClientId=client_id)):
+                reason = EndReason.WALL
+                episode_duration = (n + 1) * params.k * dt
+                flag_wall_contact = True
+                break
 
-        max_yaw = max(max_yaw, np.abs(yaw))
-        mean_yaw = (mean_yaw * n + np.abs(yaw)) / (n + 1)
-
-        if len(p.getContactPoints(bodyA=env.wall_right, bodyB=robot.robot_id, physicsClientId=client_id)):
-            reason = EndReason.WALL
-            episode_duration = (n + 1) * params.k * dt
+        if flag_wall_contact:
             break
-        if len(p.getContactPoints(bodyA=env.wall_left, bodyB=robot.robot_id, physicsClientId=client_id)) > 0:
-            reason = EndReason.WALL
-            episode_duration = (n + 1) * params.k * dt
-            break
-        if len(p.getContactPoints(bodyA=env.wall_back, bodyB=robot.robot_id, physicsClientId=client_id)):
-            reason = EndReason.WALL
-            episode_duration = (n + 1) * params.k * dt
-            break
-
-
 
         if np.abs(roll) > robot.fall_threshold or np.abs(pitch) > robot.fall_threshold:
             reason = EndReason.FALL
             episode_duration = (n + 1) * params.k * dt
             break
-        if current_x >= x_goal:
-            reason = EndReason.GOAL
-            episode_duration = (n + 1) * params.k * dt
-            break
+
 
     if reason is None:
         reason = EndReason.TIME_LIMIT
         episode_duration = params.episode_time
 
     measurements = EpisodeMetrics(
-        progress=progress,
-        goal_distance=env.params.track_length - env.params.end_distance - env.params.start_distance,
+        max_distance=max_distance,
+        toes_path_length=float(toes_path_length),
         end_reason=reason,
         episode_length=params.episode_time,
         duration=episode_duration,
-        max_y=max_y,
-        max_yaw=max_yaw,
-        mean_yaw=mean_yaw,
-        max_joint_action_change=np.max(mean_action_change),
     )
 
     return measurements

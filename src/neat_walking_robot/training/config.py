@@ -5,8 +5,6 @@ from dataclasses import asdict, dataclass
 from enum import Enum
 from pathlib import Path
 
-import numpy as np
-
 from neat_walking_robot.environments import (
     BaseEnvironmentData,
     EnvironmentType,
@@ -25,16 +23,9 @@ class TrainingConfig:
     robot_spec: RobotSpec
     episode_params: EpisodeParams
     fitness_params: FitnessParams
-    fitness_function: FitnessFunction = FitnessFunction.V1
+    fitness_function: FitnessFunction
     neat_config_path: Path
     seed: int
-
-    def __post_init__(self):
-        target_distance = self.env_data.track_length - self.env_data.end_distance - self.env_data.start_distance
-        episode_time = self.episode_params.episode_time
-        if self.fitness_params.target_speed <= target_distance / episode_time:
-            raise ValueError(
-                f"Target speed ({self.fitness_params.target_speed}) in fitness_params must be greater than minimal speed ({target_distance / episode_time}) needed for episode completion")
 
 
 def default_training_config(neat_config_path: Path, seed: int) -> TrainingConfig:
@@ -53,15 +44,11 @@ def default_training_config(neat_config_path: Path, seed: int) -> TrainingConfig
     robot_data = A1_ROBOT_SPEC
     episode_params = EpisodeParams(
         episode_time=10.0,
-        frequency=3.0,
         k=4
     )
     fit_params = FitnessParams(
         goal_bonus=2.0,
         penalty=1.0,
-        target_speed=1.0,
-        mean_action_change_threshold=0.2,
-        yaw_limit=np.pi/2
     )
     return TrainingConfig(
         simulation_data=simulation_data,
@@ -70,6 +57,7 @@ def default_training_config(neat_config_path: Path, seed: int) -> TrainingConfig
         robot_spec=robot_data,
         episode_params=episode_params,
         fitness_params=fit_params,
+        fitness_function=FitnessFunction.DISTANCE,
         neat_config_path=neat_config_path,
         seed=seed
     )

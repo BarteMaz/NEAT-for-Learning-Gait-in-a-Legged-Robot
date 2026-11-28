@@ -21,9 +21,7 @@ from neat_walking_robot.training.evaluation import (
 from neat_walking_robot.training.fitness import (
     FitnessParams,
     FitnessFunction,
-    FITNESS,
-    fitness_v1,
-    fitness_v2
+    FITNESS
 )
 
 __all__ = [
@@ -37,8 +35,6 @@ __all__ = [
     "eval_genome",
     "eval_genomes",
     "FITNESS",
-    "fitness_v1",
-    "fitness_v2",
     "init_worker",
     "load_run_config",
     "make_policy",

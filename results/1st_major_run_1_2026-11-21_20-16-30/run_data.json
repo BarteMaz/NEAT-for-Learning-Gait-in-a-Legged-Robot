@@ -1,8 +1,0 @@
-{
-  "name": "1st_major_run",
-  "generations": 100,
-  "num_workers": 12,
-  "pop_size": 100,
-  "runtime": 177.72158579999996,
-  "neat-python_version": "2.0.0"
-}

@@ -1,0 +1,6 @@
+Maksymalna prędkość kątowa stawów i maksymalny moment: [https://www.unitree.com/a1].
+Z czego zrobione są nakładki na stopy robota: [https://www.robotshop.com/products/unitree-go2-foot-pad-pair].
+Współczynnik tarcia gumy z betonem:
+- https://www.engineeringtoolbox.com/friction-coefficients-d_778.html
+- https://www.teachengineering.org/search?q=Table%20of%20materials%20friction
+- https://hypertextbook.com/facts/2006/MatthewMichaels.shtml
